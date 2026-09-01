@@ -8,12 +8,18 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
-// Servir archivos estáticos desde la raíz del proyecto
-app.use(express.static(__dirname));
+// Servir archivos estáticos de forma segura desde la raíz
+app.use(express.static(path.join(__dirname)));
 
-// Ruta principal para cargar la interfaz
+// Ruta principal con validación de existencia del archivo
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    const filePath = path.join(__dirname, 'index.html');
+    res.sendFile(filePath, (err) => {
+        if (err) {
+            console.error("Error al enviar index.html:", err);
+            res.status(500).send("Error interno: No se pudo cargar la interfaz.");
+        }
+    });
 });
 
 // 1. REGISTRAR Y VALIDAR PAGO MÓVIL
