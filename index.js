@@ -1,18 +1,19 @@
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
-const supabase = require('./db'); // O la configuración de tu conexión a Supabase
+const supabase = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
-// CONFIGURACIÓN DE ARCHIVOS ESTÁTICOS Y RUTA RAÍZ
-app.use(express.static(path.join(__dirname, 'public')));
+// Servir archivos estáticos desde la raíz del proyecto
+app.use(express.static(__dirname));
 
+// Ruta principal para cargar la interfaz
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // 1. REGISTRAR Y VALIDAR PAGO MÓVIL
@@ -20,12 +21,10 @@ app.post('/api/verificar-pago', async (req, res) => {
     try {
         let { referencia, monto, telefono, cedula } = req.body;
         
-        // Limpieza de espacios
         referencia = referencia ? referencia.trim() : '';
         telefono = telefono ? telefono.trim() : '';
         cedula = cedula ? cedula.trim() : '';
 
-        // Aquí va tu lógica de inserción a Supabase
         const { data, error } = await supabase
             .from('pagos')
             .insert([{ referencia, monto, telefono, cedula }]);

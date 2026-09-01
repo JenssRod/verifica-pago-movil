@@ -146,7 +146,7 @@
                     </tr>
                 </thead>
                 <tbody id="tablaPagosBody">
-                    </tbody>
+                </tbody>
             </table>
         </div>
         <button onclick="window.print()" class="btn-print no-print">🖨️ Imprimir / Guardar Cierre (PDF)</button>
@@ -210,7 +210,7 @@
                 mensajeAlerta.className = 'alert success';
                 mensajeAlerta.innerText = resultado.mensaje;
                 formPago.reset();
-                cargarCierre(); // Actualiza la tabla automáticamente para las 3 PCs
+                cargarCierre();
             } else {
                 mensajeAlerta.className = 'alert error';
                 mensajeAlerta.innerText = resultado.error || resultado.mensaje;
@@ -222,7 +222,6 @@
         }
     });
 
-    // Cargar la tabla al abrir la página y actualizarla cada 10 segundos automáticamente
     cargarCierre();
     setInterval(cargarCierre, 10000);
 </script>
