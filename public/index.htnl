@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificación de Pagos Móviles</title>
+    <style>
+        :root {
+            --primary: #004d40;
+            --secondary: #00796b;
+            --bg: #f4f6f8;
+            --card-bg: #ffffff;
+            --text: #333333;
+            --error: #d32f2f;
+            --success: #388e3c;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h2 { text-align: center; color: var(--primary); }
+        .card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label { display: block; font-weight: 600; margin-bottom: 5px; }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover { background-color: var(--secondary); }
+        .btn-print {
+            background-color: #3f51b5;
+            margin-top: 10px;
+        }
+        .btn-print:hover { background-color: #303f9f; }
+        .alert {
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 15px;
+            font-weight: 500;
+            display: none;
+        }
+        .alert.success { background: #e8f5e9; color: var(--success); border: 1px solid #c8e6c9; }
+        .alert.error { background: #ffebee; color: var(--error); border: 1px solid #ffcdd2; }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        table, th, td { border: 1px solid #ddd; }
+        th, td { padding: 10px; text-align: left; }
+        th { background-color: #f1f1f1; }
+        .resumen-box {
+            display: flex;
+            justify-content: space-between;
+            background: #e0f2f1;
+            padding: 15px;
+            border-radius: 6px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        @media print {
+            body * { visibility: hidden; }
+            #seccion-reporte, #seccion-reporte * { visibility: visible; }
+            #seccion-reporte { position: absolute; left: 0; top: 0; width: 100%; }
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Control y Registro de Pagos Móviles</h2>
+
+    <div class="card no-print">
+        <h3>Registrar Nuevo Pago</h3>
+        <form id="formPago">
+            <div class="form-group">
+                <label>Últimos Dígitos o Referencia:</label>
+                <input type="text" id="referencia" placeholder="Ej: 9988" required>
+            </div>
+            <div class="form-group">
+                <label>Monto (Bs.):</label>
+                <input type="number" step="0.01" id="monto" placeholder="0.00" required>
+            </div>
+            <div class="form-group">
+                <label>Teléfono Emisor:</label>
+                <input type="text" id="telefono" placeholder="04141234567" required>
+            </div>
+            <div class="form-group">
+                <label>Cédula del Cliente:</label>
+                <input type="text" id="cedula" placeholder="12345678" required>
+            </div>
+            <button type="submit">Validar y Registrar Pago</button>
+        </form>
+        <div id="mensajeAlerta" class="alert"></div>
+    </div>
+
+    <div class="card" id="seccion-reporte">
+        <h3>Reporte y Cierre de Caja</h3>
+        <div class="resumen-box">
+            <div>Total Operaciones: <span id="lblTotalOps">0</span></div>
+            <div>Monto Acumulado: Bs. <span id="lblMontoTotal">0.00</span></div>
+        </div>
+        <div style="overflow-x:auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Ref</th>
+                        <th>Monto</th>
+                        <th>Teléfono</th>
+                        <th>Cédula</th>
+                        <th>Fecha / Hora</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaPagosBody">
+                    </tbody>
+            </table>
+        </div>
+        <button onclick="window.print()" class="btn-print no-print">🖨️ Imprimir / Guardar Cierre (PDF)</button>
+    </div>
+</div>
+
+<script>
+    const formPago = document.getElementById('formPago');
+    const mensajeAlerta = document.getElementById('mensajeAlerta');
+
+    async function cargarCierre() {
+        try {
+            const res = await fetch('/api/cierre-diario');
+            const data = await res.json();
+            if (data.success) {
+                document.getElementById('lblTotalOps').innerText = data.totalTransacciones;
+                document.getElementById('lblMontoTotal').innerText = data.montoTotal;
+                
+                const tbody = document.getElementById('tablaPagosBody');
+                tbody.innerHTML = '';
+                data.pagos.forEach(p => {
+                    const fechaFormateada = new Date(p.created_at).toLocaleString();
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><strong>${p.referencia}</strong></td>
+                            <td>Bs. ${parseFloat(p.monto).toFixed(2)}</td>
+                            <td>${p.telefono}</td>
+                            <td>${p.cedula}</td>
+                            <td>${fechaFormateada}</td>
+                        </tr>
+                    `;
+                });
+            }
+        } catch (err) {
+            console.error('Error al cargar reporte:', err);
+        }
+    }
+
+    formPago.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        mensajeAlerta.style.display = 'none';
+
+        const bodyData = {
+            referencia: document.getElementById('referencia').value,
+            monto: document.getElementById('monto').value,
+            telefono: document.getElementById('telefono').value,
+            cedula: document.getElementById('cedula').value
+        };
+
+        try {
+            const respuesta = await fetch('/api/verificar-pago', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(bodyData)
+            });
+
+            const resultado = await respuesta.json();
+
+            mensajeAlerta.style.display = 'block';
+            if (resultado.success) {
+                mensajeAlerta.className = 'alert success';
+                mensajeAlerta.innerText = resultado.mensaje;
+                formPago.reset();
+                cargarCierre(); // Actualiza la tabla automáticamente para las 3 PCs
+            } else {
+                mensajeAlerta.className = 'alert error';
+                mensajeAlerta.innerText = resultado.error || resultado.mensaje;
+            }
+        } catch (err) {
+            mensajeAlerta.style.display = 'block';
+            mensajeAlerta.className = 'alert error';
+            mensajeAlerta.innerText = 'Error de conexión con el servidor.';
+        }
+    });
+
+    // Cargar la tabla al abrir la página y actualizarla cada 10 segundos automáticamente
+    cargarCierre();
+    setInterval(cargarCierre, 10000);
+</script>
+
+</body>
+</html>
