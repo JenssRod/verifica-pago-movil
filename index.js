@@ -1,13 +1,21 @@
 require('dotenv').config();
 const express = require('express');
+const path = require('path');
 const supabase = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
-// Permitir archivos estáticos si luego pones un HTML en una carpeta 'public'
-app.use(express.static('public'));
+
+// ==========================================
+// CONFIGURACIÓN DE ARCHIVOS ESTÁTICOS Y RUTA RAÍZ
+// ==========================================
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 // ==========================================
 // 1. REGISTRAR Y VALIDAR PAGO MÓVIL
@@ -142,10 +150,10 @@ app.get('/api/cierre-diario', async (req, res) => {
         return res.status(500).json({ success: false, error: err.message });
     }
 });
-const path = require('path');
 
-// Esto le indica a Express que sirva los archivos de la carpeta 'public' en la raíz
-app.use(express.static(path.join(__dirname, 'public')));
+// ==========================================
+// INICIO DEL SERVIDOR
+// ==========================================
 app.listen(PORT, () => {
     console.log(`🚀 Servidor multiusuario corriendo en el puerto ${PORT}`);
 });
