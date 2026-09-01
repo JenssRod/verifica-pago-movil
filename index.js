@@ -142,7 +142,10 @@ app.get('/api/cierre-diario', async (req, res) => {
         return res.status(500).json({ success: false, error: err.message });
     }
 });
+const path = require('path');
 
+// Esto le indica a Express que sirva los archivos de la carpeta 'public' en la raíz
+app.use(express.static(path.join(__dirname, 'public')));
 app.listen(PORT, () => {
     console.log(`🚀 Servidor multiusuario corriendo en el puerto ${PORT}`);
 });
