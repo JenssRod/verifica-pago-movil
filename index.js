@@ -1,25 +1,25 @@
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 const supabase = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
+app.use(express.static(__dirname));
 
-// Servir archivos estáticos de forma segura desde la raíz
-app.use(express.static(path.join(__dirname)));
-
-// Ruta principal con validación de existencia del archivo
+// Ruta principal robusta para servir index.html
 app.get('/', (req, res) => {
     const filePath = path.join(__dirname, 'index.html');
-    res.sendFile(filePath, (err) => {
-        if (err) {
-            console.error("Error al enviar index.html:", err);
-            res.status(500).send("Error interno: No se pudo cargar la interfaz.");
-        }
-    });
+    
+    if (fs.existsSync(filePath)) {
+        res.sendFile(filePath);
+    } else {
+        console.error("No se encontró el archivo index.html en:", filePath);
+        res.status(500).send("Error crítico: index.html no está accesible en el servidor.");
+    }
 });
 
 // 1. REGISTRAR Y VALIDAR PAGO MÓVIL
