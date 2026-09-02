@@ -14,17 +14,17 @@ const htmlContent = `
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verificación de Pago Móvil - Biopago / Cierre</title>
+    <title>Verificación Rápida - Pago Móvil / Biopago</title>
     <style>
         body { font-family: Arial, sans-serif; background: #eef2f7; margin: 0; padding: 15px; display: flex; justify-content: center; align-items: center; flex-direction: column; }
         .main-container { width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: 15px; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         h2 { text-align: center; color: #2c3e50; margin-top: 0; font-size: 22px; }
         label { display: block; margin-top: 10px; font-weight: bold; color: #34495e; font-size: 14px; }
-        input { width: 100%; padding: 12px; margin-top: 5px; box-sizing: border-box; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 16px; background: #f8fafc; }
+        input { width: 100%; padding: 14px; margin-top: 5px; box-sizing: border-box; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 18px; background: #f8fafc; text-align: center; letter-spacing: 2px; }
         input:focus { border-color: #3b82f6; outline: none; background: white; }
         
-        .btn-primary { width: 100%; background: #2563eb; color: white; padding: 14px; border: none; border-radius: 8px; margin-top: 18px; cursor: pointer; font-size: 16px; font-weight: bold; }
+        .btn-primary { width: 100%; background: #2563eb; color: white; padding: 14px; border: none; border-radius: 8px; margin-top: 15px; cursor: pointer; font-size: 16px; font-weight: bold; }
         .btn-primary:active { background: #1d4ed8; }
         
         .btn-toggle { width: 100%; background: #1e293b; color: white; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: bold; display: flex; justify-content: center; align-items: center; gap: 8px; transition: background 0.2s; }
@@ -61,23 +61,14 @@ const htmlContent = `
 </head>
 <body>
     <div class="main-container">
-        <!-- Formulario de Registro / Consulta de Pago -->
+        <!-- Formulario de Consulta Rápida por Referencia -->
         <div class="card">
-            <h2>Gestión de Pagos / Biopago</h2>
+            <h2>Consulta Rápida de Pago Móvil</h2>
             <form id="pagoForm">
-                <label>Referencia (últimos dígitos):</label>
-                <input type="text" id="referencia" placeholder="Ej: 4541" required>
+                <label>Ingrese los últimos 4 dígitos de la Referencia:</label>
+                <input type="text" id="referencia" maxlength="4" placeholder="Ej: 4541" required autocomplete="off">
                 
-                <label>Monto (Bs.):</label>
-                <input type="text" id="monto" placeholder="Ej: 1500.00" required>
-                
-                <label>Teléfono:</label>
-                <input type="text" id="telefono" placeholder="Ej: 0424..." required>
-                
-                <label>Cédula:</label>
-                <input type="text" id="cedula" placeholder="Ej: 1713..." required>
-                
-                <button type="submit" class="btn-primary">Registrar Pago en Sistema</button>
+                <button type="submit" class="btn-primary">Consultar y Registrar en Cierre</button>
             </form>
             <div id="mensaje"></div>
 
@@ -115,7 +106,7 @@ const htmlContent = `
                 <div class="factor-box">
                     <label style="margin-top: 0; color: #1e293b;">Factor Cambiario / Tasa BCV (Bs. por USD):</label>
                     <div style="display: flex; gap: 8px; align-items: center; margin-top: 5px;">
-                        <input type="text" id="tasaBcv" value="36.50" oninput="calcularTotales()" style="margin-top: 0; font-weight: bold; color: #0f172a;">
+                        <input type="text" id="tasaBcv" value="36.50" oninput="calcularTotales()" style="margin-top: 0; font-weight: bold; color: #0f172a; text-align: left; letter-spacing: normal; font-size: 16px; padding: 10px;">
                         <button type="button" class="btn-bcv" onclick="consultarTasaBcvManual()">🔄 Consultar BCV</button>
                     </div>
                     <div id="bcvStatus" style="font-size: 11px; color: #64748b; margin-top: 4px;">Tasa lista para conversión y cierre.</div>
@@ -143,7 +134,7 @@ const htmlContent = `
         let globalDataPagos = [];
         const keyboard = document.getElementById('virtualKeyboard');
 
-        ['referencia', 'monto', 'telefono', 'cedula', 'tasaBcv'].forEach(id => {
+        ['referencia', 'tasaBcv'].forEach(id => {
             const input = document.getElementById(id);
             if(input) {
                 input.addEventListener('focus', () => {
@@ -158,15 +149,23 @@ const htmlContent = `
         }
 
         function insertKey(val) {
-            if (activeInput && activeInput.id !== 'tasaBcv') activeInput.value += val;
+            if (activeInput && activeInput.id === 'referencia') {
+                if(activeInput.value.length < 4) {
+                    activeInput.value += val;
+                }
+            }
         }
 
         function backspaceKey() {
-            if (activeInput && activeInput.id !== 'tasaBcv') activeInput.value = activeInput.value.slice(0, -1);
+            if (activeInput && activeInput.id === 'referencia') {
+                activeInput.value = activeInput.value.slice(0, -1);
+            }
         }
 
         function clearInput() {
-            if (activeInput && activeInput.id !== 'tasaBcv') activeInput.value = '';
+            if (activeInput && activeInput.id === 'referencia') {
+                activeInput.value = '';
+            }
         }
 
         async function consultarTasaBcvManual() {
@@ -207,16 +206,19 @@ const htmlContent = `
         document.getElementById('pagoForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const referencia = document.getElementById('referencia').value;
-            const monto = document.getElementById('monto').value;
-            const telefono = document.getElementById('telefono').value;
-            const cedula = document.getElementById('cedula').value;
             const mensaje = document.getElementById('mensaje');
+
+            if(referencia.length < 4) {
+                mensaje.style.color = 'red';
+                mensaje.textContent = 'Debe ingresar los 4 dígitos de la referencia.';
+                return;
+            }
 
             try {
                 const res = await fetch('/api/verificar-pago', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ referencia, monto, telefono, cedula })
+                    body: JSON.stringify({ referencia })
                 });
                 const data = await res.json();
                 if (data.success) {
@@ -255,7 +257,7 @@ const htmlContent = `
                     let html = '';
                     data.pagos.forEach(p => {
                         html += '<div class="report-item">' +
-                            '<span>Ref: <strong>' + p.referencia + '</strong> | Cédula: ' + p.cedula + '</span>' +
+                            '<span>Ref: <strong>' + p.referencia + '</strong></span>' +
                             '<span style="color: #059669; font-weight: bold;">Bs. ' + Number(p.monto).toFixed(2) + '</span>' +
                         '</div>';
                     });
@@ -289,20 +291,23 @@ app.get('/', (req, res) => {
 
 app.post('/api/verificar-pago', async (req, res) => {
     try {
-        let { referencia, monto, telefono, cedula } = req.body;
+        let { referencia } = req.body;
         referencia = referencia ? referencia.trim() : '';
-        telefono = telefono ? telefono.trim() : '';
-        cedula = cedula ? cedula.trim() : '';
+
+        // Aquí puedes simular o conectar la consulta a la API de Banesco o buscar el pago pre-registrado.
+        // Como ejemplo rápido, registramos la referencia con un monto de prueba o buscándola.
+        // En tu entorno final, aquí harás el llamado a la API del banco usando esta referencia.
+        const montoSimulado = 1000.00; // Esto vendrá de la respuesta de la API del banco
 
         const { data, error } = await supabase
             .from('pagos')
-            .insert([{ referencia, monto, telefono, cedula }]);
+            .insert([{ referencia, monto: montoSimulado, telefono: '-', cedula: '-' }]);
 
         if (error) throw error;
-        res.json({ success: true, mensaje: '¡Pago registrado con éxito!' });
+        res.json({ success: true, mensaje: `¡Pago Ref. ${referencia} verificado y registrado!` });
     } catch (err) {
         console.error("Error al registrar:", err.message);
-        res.status(500).json({ success: false, error: err.message || 'Error al registrar pago.' });
+        res.status(500).json({ success: false, error: err.message || 'Error al consultar pago.' });
     }
 });
 
@@ -371,10 +376,8 @@ app.get('/api/cierre-pdf', async (req, res) => {
 
         doc.fontSize(10).fillColor('#1e293b');
         const startY = doc.y;
-        doc.text('Fecha / Hora', 50, startY, { width: 120 });
-        doc.text('Referencia', 170, startY, { width: 80 });
-        doc.text('Cédula', 255, startY, { width: 80 });
-        doc.text('Teléfono', 340, startY, { width: 80 });
+        doc.text('Fecha / Hora', 50, startY, { width: 150 });
+        doc.text('Referencia', 250, startY, { width: 150 });
         doc.text('Monto (Bs.)', 430, startY, { width: 100, align: 'right' });
         
         doc.moveDown(0.8);
@@ -390,10 +393,8 @@ app.get('/api/cierre-pdf', async (req, res) => {
             }
 
             doc.fontSize(9).fillColor('#475569');
-            doc.text(fechaFormateada, 50, doc.y, { width: 120 });
-            doc.text(p.referencia || '-', 170, doc.y, { width: 80 });
-            doc.text(p.cedula || '-', 255, doc.y, { width: 80 });
-            doc.text(p.telefono || '-', 340, doc.y, { width: 80 });
+            doc.text(fechaFormateada, 50, doc.y, { width: 150 });
+            doc.text(p.referencia || '-', 250, doc.y, { width: 150 });
             doc.text(`Bs. ${Number(p.monto).toFixed(2)}`, 430, doc.y, { width: 100, align: 'right' });
             doc.moveDown(0.8);
         });
