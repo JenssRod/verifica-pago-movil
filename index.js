@@ -99,7 +99,7 @@ const htmlContent = `
             </div>
         </div>
 
-        <!-- Botón y Panel de Reportes Diario (Oculto / Colapsable) -->
+        <!-- Botón y Panel de Reportes Diario -->
         <div class="card" style="padding: 15px;">
             <button class="btn-toggle" onclick="toggleReporte()">
                 <span>📊</span> <span id="toggleReportText">Ver Cierre y Reporte Diario</span>
@@ -199,21 +199,21 @@ const htmlContent = `
                 const data = await res.json();
 
                 if (data.success) {
-                    totalMonto.textContent = `Total Recaudado: $${data.montoTotal} (${data.totalTransacciones} pagos)`;
+                    totalMonto.textContent = 'Total Recaudado: $' + data.montoTotal + ' (' + data.totalTransacciones + ' pagos)';
                     if (data.pagos.length === 0) {
                         listaReporte.innerHTML = '<div style="text-align: center; color: #64748b;">No hay pagos registrados aún.</div>';
                         return;
                     }
                     let html = '';
                     data.pagos.forEach(p => {
-                        html += \`<div class="report-item">
-                            <span>Ref: <strong>\${p.referencia}</strong> | Cédula: \${p.cedula}</span>
-                            <span style="color: #059669; font-weight: bold;">$\${p.monto}</span>
-                        </div>\`;
+                        html += '<div class="report-item">' +
+                            '<span>Ref: <strong>' + p.referencia + '</strong> | Cédula: ' + p.cedula + '</span>' +
+                            '<span style="color: #059669; font-weight: bold;">$' + p.monto + '</span>' +
+                        '</div>';
                     });
                     listaReporte.innerHTML = html;
                 } else {
-                    listaReporte.innerHTML = \`<div style="text-align: center; color: red;">\${data.error || 'Error al cargar reporte.'}</div>\`;
+                    listaReporte.innerHTML = '<div style="text-align: center; color: red;">Error al cargar reporte.</div>';
                 }
             } catch (err) {
                 listaReporte.innerHTML = '<div style="text-align: center; color: red;">Error de conexión.</div>';
