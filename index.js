@@ -106,7 +106,7 @@ const htmlContent = `
                 <span>📊</span> <span id="toggleReportText">Ver Cierre y Reporte de Hoy</span>
             </button>
             <div class="report-panel" id="reportPanel">
-                <label style="font-size: 13px; margin-top: 0;">Tasa BCV del Dólar (Bs.):</label>
+                <label style="font-size: 13px; margin-top: 0;">Tasa BCV del Dólar (Bs.): <span style="font-size: 11px; color: #64748b; font-weight: normal;">(Automática o editable)</span></label>
                 <input type="text" id="tasaBcv" value="36.50" oninput="calcularTotales()" style="padding: 8px; font-size: 14px;">
 
                 <div class="totals-box">
@@ -155,6 +155,19 @@ const htmlContent = `
             if (activeInput && activeInput.id !== 'tasaBcv') activeInput.value = '';
         }
 
+        async function obtenerTasaBcvAutomatica() {
+            try {
+                const res = await fetch('https://ve.dolarapi.com/v1/dolares/bcv');
+                const data = await res.json();
+                if (data && data.promedio) {
+                    document.getElementById('tasaBcv').value = data.promedio;
+                    calcularTotales();
+                }
+            } catch (e) {
+                console.log('No se pudo conectar a la tasa automática, usando valor predeterminado.');
+            }
+        }
+
         function toggleReporte() {
             const panel = document.getElementById('reportPanel');
             const text = document.getElementById('toggleReportText');
@@ -164,6 +177,7 @@ const htmlContent = `
             } else {
                 panel.style.display = 'block';
                 text.textContent = 'Ocultar Cierre y Reporte';
+                obtenerTasaBcvAutomatica();
                 cargarReporte();
             }
         }
@@ -270,7 +284,6 @@ app.post('/api/verificar-pago', async (req, res) => {
     }
 });
 
-// Endpoint modificado para filtrar únicamente las transacciones del día actual (Hora Venezuela/Servidor)
 app.get('/api/cierre-diario', async (req, res) => {
     try {
         const hoyInicio = new Date();
@@ -295,7 +308,6 @@ app.get('/api/cierre-diario', async (req, res) => {
     }
 });
 
-// Endpoint del PDF también adaptado solo para el día de hoy
 app.get('/api/cierre-pdf', async (req, res) => {
     try {
         const tasa = parseFloat(req.query.tasa) || 1;
