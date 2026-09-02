@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const PDFDocument = require('pdfkit');
 const supabase = require('./db');
 
 const app = express();
@@ -28,6 +29,9 @@ const htmlContent = `
         
         .btn-toggle { width: 100%; background: #475569; color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: bold; display: flex; justify-content: center; align-items: center; gap: 8px; transition: background 0.2s; }
         .btn-toggle:hover { background: #334155; }
+
+        .btn-pdf { width: 100%; background: #dc2626; color: white; padding: 12px; border: none; border-radius: 8px; margin-top: 10px; cursor: pointer; font-size: 15px; font-weight: bold; display: flex; justify-content: center; align-items: center; gap: 8px; text-decoration: none; box-sizing: border-box; }
+        .btn-pdf:hover { background: #b91c1c; }
         
         #mensaje { margin-top: 12px; text-align: center; font-weight: bold; font-size: 15px; }
 
@@ -105,6 +109,9 @@ const htmlContent = `
                 <div class="report-box" id="listaReporte">
                     <div style="text-align: center; color: #64748b;">Cargando transacciones...</div>
                 </div>
+                <a href="/api/cierre-pdf" target="_blank" class="btn-pdf">
+                    <span>📄</span> Descargar / Imprimir Cierre PDF
+                </a>
             </div>
         </div>
     </div>
@@ -113,7 +120,6 @@ const htmlContent = `
         let activeInput = null;
         const keyboard = document.getElementById('virtualKeyboard');
 
-        // Detectar enfoque para activar el teclado virtual (útil para pantallas táctiles)
         ['referencia', 'monto', 'telefono', 'cedula'].forEach(id => {
             const input = document.getElementById(id);
             input.addEventListener('focus', () => {
@@ -127,24 +133,17 @@ const htmlContent = `
         }
 
         function insertKey(val) {
-            if (activeInput) {
-                activeInput.value += val;
-            }
+            if (activeInput) activeInput.value += val;
         }
 
         function backspaceKey() {
-            if (activeInput) {
-                activeInput.value = activeInput.value.slice(0, -1);
-            }
+            if (activeInput) activeInput.value = activeInput.value.slice(0, -1);
         }
 
         function clearInput() {
-            if (activeInput) {
-                activeInput.value = '';
-            }
+            if (activeInput) activeInput.value = '';
         }
 
-        // Mostrar u ocultar el panel de reporte diario
         function toggleReporte() {
             const panel = document.getElementById('reportPanel');
             const text = document.getElementById('toggleReportText');
@@ -158,7 +157,6 @@ const htmlContent = `
             }
         }
 
-        // Enviar formulario
         document.getElementById('pagoForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const referencia = document.getElementById('referencia').value;
@@ -192,7 +190,6 @@ const htmlContent = `
             }
         });
 
-        // Cargar reporte desde Supabase
         async function cargarReporte() {
             const listaReporte = document.getElementById('listaReporte');
             const totalMonto = document.getElementById('totalMonto');
@@ -234,7 +231,6 @@ app.get('/', (req, res) => {
 app.post('/api/verificar-pago', async (req, res) => {
     try {
         let { referencia, monto, telefono, cedula } = req.body;
-        
         referencia = referencia ? referencia.trim() : '';
         telefono = telefono ? telefono.trim() : '';
         cedula = cedula ? cedula.trim() : '';
@@ -244,7 +240,6 @@ app.post('/api/verificar-pago', async (req, res) => {
             .insert([{ referencia, monto, telefono, cedula }]);
 
         if (error) throw error;
-
         res.json({ success: true, mensaje: '¡Pago registrado con éxito!' });
     } catch (err) {
         console.error(err);
@@ -260,7 +255,6 @@ app.get('/api/cierre-diario', async (req, res) => {
             .order('created_at', { ascending: false });
 
         if (error) throw error;
-
         let montoTotal = pagos.reduce((acc, p) => acc + parseFloat(p.monto || 0), 0);
 
         res.json({
@@ -272,6 +266,79 @@ app.get('/api/cierre-diario', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ success: false, error: 'Error al obtener el cierre.' });
+    }
+});
+
+// Endpoint para generar y descargar/visualizar el PDF tipo Carta
+app.get('/api/cierre-pdf', async (req, res) => {
+    try {
+        const { data: pagos, error } = await supabase
+            .from('pagos')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        let montoTotal = pagos.reduce((acc, p) => acc + parseFloat(p.monto || 0), 0);
+        const fechaActual = new Date().toLocaleString();
+
+        // Crear documento PDF tamaño Carta
+        const doc = new PDFDocument({ size: 'LETTER', margin: 50 });
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', 'inline; filename=cierre_diario.pdf');
+
+        doc.pipe(res);
+
+        // Encabezado
+        doc.fontSize(20).fillColor('#2c3e50').text('Cierre y Reporte Diario de Pagos', { align: 'center' });
+        doc.fontSize(10).fillColor('#7f8c8d').text(`Fecha de emisión: ${fechaActual}`, { align: 'center' });
+        doc.moveDown(1.5);
+
+        // Resumen
+        doc.fontSize(12).fillColor('#333').text(`Total de Transacciones: ${pagos.length}`);
+        doc.text(`Monto Total Recaudado: $${montoTotal.toFixed(2)}`);
+        doc.moveDown(1);
+
+        // Línea divisoria
+        doc.strokeColor('#cbd5e1').lineWidth(1).moveTo(50, doc.y).lineTo(562, doc.y).stroke();
+        doc.moveDown(1);
+
+        // Tabla de pagos - Cabecera
+        doc.fontSize(10).fillColor('#1e293b');
+        const startY = doc.y;
+        doc.text('Fecha / Hora', 50, startY, { width: 130 });
+        doc.text('Referencia', 185, startY, { width: 90 });
+        doc.text('Cédula', 280, startY, { width: 90 });
+        doc.text('Teléfono', 375, startY, { width: 90 });
+        doc.text('Monto ($)', 470, startY, { width: 80, align: 'right' });
+        
+        doc.moveDown(0.8);
+        doc.strokeColor('#e2e8f0').lineWidth(0.5).moveTo(50, doc.y).lineTo(562, doc.y).stroke();
+        doc.moveDown(0.5);
+
+        // Listado de filas
+        pagos.forEach((p) => {
+            const fechaFormateada = new Date(p.created_at).toLocaleString();
+            const currentY = doc.y;
+
+            if (currentY > 700) {
+                doc.addPage();
+            }
+
+            doc.fontSize(9).fillColor('#475569');
+            doc.text(fechaFormateada, 50, doc.y, { width: 130 });
+            doc.text(p.referencia || '-', 185, doc.y, { width: 90 });
+            doc.text(p.cedula || '-', 280, doc.y, { width: 90 });
+            doc.text(p.telefono || '-', 375, doc.y, { width: 90 });
+            doc.text(`$${Number(p.monto).toFixed(2)}`, 470, doc.y, { width: 80, align: 'right' });
+            doc.moveDown(0.8);
+        });
+
+        doc.end();
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Error al generar el PDF del cierre.');
     }
 });
 
