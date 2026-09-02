@@ -27,11 +27,11 @@ const htmlContent = `
         h2 { text-align: center; color: #2c3e50; margin-top: 5px; margin-bottom: 4px; font-size: 22px; }
         .brand-subtitle { text-align: center; color: #64748b; font-size: 12px; font-weight: bold; letter-spacing: 1px; margin-bottom: 15px; text-transform: uppercase; }
         
-        label { display: block; margin-top: 10px; font-weight: bold; color: #34495e; font-size: 14px; }
-        input { width: 100%; padding: 14px; margin-top: 5px; box-sizing: border-box; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 18px; background: #f8fafc; text-align: center; letter-spacing: 2px; }
+        label { display: block; margin-top: 12px; font-weight: bold; color: #34495e; font-size: 14px; }
+        input { width: 100%; padding: 14px; margin-top: 5px; box-sizing: border-box; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 18px; background: #f8fafc; text-align: center; letter-spacing: 1px; }
         input:focus { border-color: #3b82f6; outline: none; background: white; }
         
-        .btn-primary { width: 100%; background: #2563eb; color: white; padding: 14px; border: none; border-radius: 8px; margin-top: 15px; cursor: pointer; font-size: 16px; font-weight: bold; }
+        .btn-primary { width: 100%; background: #2563eb; color: white; padding: 14px; border: none; border-radius: 8px; margin-top: 18px; cursor: pointer; font-size: 16px; font-weight: bold; }
         .btn-primary:active { background: #1d4ed8; }
         
         .btn-toggle { width: 100%; background: #1e293b; color: white; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: bold; display: flex; justify-content: center; align-items: center; gap: 8px; transition: background 0.2s; }
@@ -68,7 +68,7 @@ const htmlContent = `
 </head>
 <body>
     <div class="main-container">
-        <!-- Formulario de Consulta Rápida por Referencia -->
+        <!-- Formulario de Registro por Referencia y Monto -->
         <div class="card">
             <!-- LOGO INTEGRADO CON FONDO BLANCO -->
             <div class="logo-container">
@@ -84,7 +84,6 @@ const htmlContent = `
                     </linearGradient>
                   </defs>
 
-                  <!-- Fondo blanco para el SVG -->
                   <rect width="100%" height="100%" rx="16" fill="#ffffff" />
 
                   <g transform="translate(30, 25)">
@@ -113,14 +112,17 @@ const htmlContent = `
                 <label>Últimos 4 dígitos de la Referencia:</label>
                 <input type="text" id="referencia" maxlength="4" placeholder="Ej: 4541" required autocomplete="off">
                 
-                <button type="submit" class="btn-primary">Consultar en Banco y Registrar</button>
+                <label>Monto en Bolívares (Bs.):</label>
+                <input type="text" id="monto" placeholder="Ej: 350.00" required autocomplete="off">
+
+                <button type="submit" class="btn-primary">Registrar Pago</button>
             </form>
             <div id="mensaje"></div>
 
             <!-- Teclado Numérico Virtual Flotante -->
             <div class="keyboard-container" id="virtualKeyboard">
                 <div class="keyboard-header">
-                    <span class="keyboard-title">Teclado Táctil</span>
+                    <span class="keyboard-title" id="kbTitle">Teclado Táctil</span>
                     <button type="button" class="close-keyboard" onclick="hideKeyboard()">Ocultar ✕</button>
                 </div>
                 <div class="keyboard-grid">
@@ -179,12 +181,15 @@ const htmlContent = `
         let globalDataPagos = [];
         const keyboard = document.getElementById('virtualKeyboard');
 
-        ['referencia', 'tasaBcv'].forEach(id => {
+        ['referencia', 'monto', 'tasaBcv'].forEach(id => {
             const input = document.getElementById(id);
             if(input) {
                 input.addEventListener('focus', () => {
                     activeInput = input;
-                    if(id !== 'tasaBcv') keyboard.style.display = 'block';
+                    if(id !== 'tasaBcv') {
+                        keyboard.style.display = 'block';
+                        document.getElementById('kbTitle').textContent = id === 'referencia' ? 'Teclado: Referencia (4 dígitos)' : 'Teclado: Monto en Bs.';
+                    }
                 });
             }
         });
@@ -194,21 +199,25 @@ const htmlContent = `
         }
 
         function insertKey(val) {
-            if (activeInput && activeInput.id === 'referencia') {
-                if(activeInput.value.length < 4) {
+            if (activeInput) {
+                if (activeInput.id === 'referencia') {
+                    if (activeInput.value.length < 4) {
+                        activeInput.value += val;
+                    }
+                } else if (activeInput.id === 'monto') {
                     activeInput.value += val;
                 }
             }
         }
 
         function backspaceKey() {
-            if (activeInput && activeInput.id === 'referencia') {
+            if (activeInput && (activeInput.id === 'referencia' || activeInput.id === 'monto')) {
                 activeInput.value = activeInput.value.slice(0, -1);
             }
         }
 
         function clearInput() {
-            if (activeInput && activeInput.id === 'referencia') {
+            if (activeInput && (activeInput.id === 'referencia' || activeInput.id === 'monto')) {
                 activeInput.value = '';
             }
         }
@@ -251,11 +260,12 @@ const htmlContent = `
         document.getElementById('pagoForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const referencia = document.getElementById('referencia').value;
+            const monto = document.getElementById('monto').value;
             const mensaje = document.getElementById('mensaje');
 
             if(referencia.length < 4) {
                 mensaje.style.color = 'red';
-                mensaje.textContent = 'Debe ingresar los 4 dígitos de la referencia.';
+                mensaje.textContent = 'La referencia debe tener al menos 4 dígitos.';
                 return;
             }
 
@@ -263,7 +273,7 @@ const htmlContent = `
                 const res = await fetch('/api/verificar-pago', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ referencia })
+                    body: JSON.stringify({ referencia, monto })
                 });
                 const data = await res.json();
                 if (data.success) {
@@ -296,7 +306,7 @@ const htmlContent = `
                     calcularTotales();
 
                     if (data.pagos.length === 0) {
-                        listaReporte.innerHTML = '<div style="text-align: center; color: #64748b; padding: 15px;">No hay pagos verificados hoy.</div>';
+                        listaReporte.innerHTML = '<div style="text-align: center; color: #64748b; padding: 15px;">No hay pagos registrados hoy.</div>';
                         return;
                     }
                     let html = '';
@@ -304,8 +314,8 @@ const htmlContent = `
                         const fechaHora = p.fecha ? new Date(p.fecha).toLocaleString() : '-';
                         html += '<div class="report-item">' +
                             '<div>' +
-                                '<div>Ref: <strong>' + p.referencia + '</strong> | Tel: ' + (p.telefono || '-') + '</div>' +
-                                '<div style="color: #64748b; font-size: 10px;">' + fechaHora + ' | Cédula: ' + (p.cedula || '-') + '</div>' +
+                                '<div>Ref: <strong>' + p.referencia + '</strong></div>' +
+                                '<div style="color: #64748b; font-size: 10px;">' + fechaHora + '</div>' +
                             '</div>' +
                             '<span style="color: #059669; font-weight: bold; font-size: 13px;">Bs. ' + Number(p.monto).toFixed(2) + '</span>' +
                         '</div>';
@@ -340,28 +350,22 @@ app.get('/', (req, res) => {
 
 app.post('/api/verificar-pago', async (req, res) => {
     try {
-        let { referencia } = req.body;
+        let { referencia, monto } = req.body;
         referencia = referencia ? referencia.trim() : '';
-
-        // Simulación de datos extraídos
-        const montoReal = 1250.00; 
-        const telefonoReal = "04241234567";
-        const cedulaReal = "V12345678";
+        const montoNumerico = parseFloat(monto) || 0;
 
         const { data, error } = await supabase
             .from('pagos')
             .insert([{ 
                 referencia, 
-                monto: montoReal, 
-                telefono: telefonoReal, 
-                cedula: cedulaReal 
+                monto: montoNumerico 
             }]);
 
         if (error) throw error;
-        res.json({ success: true, mensaje: `¡Pago Ref. ${referencia} verificado y registrado con éxito!` });
+        res.json({ success: true, mensaje: `¡Pago Ref. ${referencia} por Bs. ${montoNumerico.toFixed(2)} registrado con éxito!` });
     } catch (err) {
-        console.error("Error al verificar:", err.message);
-        res.status(500).json({ success: false, error: 'No se encontró la referencia o hubo un error de conexión.' });
+        console.error("Error al registrar:", err.message);
+        res.status(500).json({ success: false, error: 'Hubo un error al guardar el pago en la base de datos.' });
     }
 });
 
@@ -429,13 +433,11 @@ app.get('/api/cierre-pdf', async (req, res) => {
         doc.strokeColor('#cbd5e1').lineWidth(1).moveTo(40, doc.y).lineTo(572, doc.y).stroke();
         doc.moveDown(0.8);
 
-        // Cabecera de la tabla PDF
+        // Cabecera de la tabla PDF (simplificada a Fecha, Referencia y Monto)
         doc.fontSize(9).fillColor('#1e293b');
         let startY = doc.y;
-        doc.text('Fecha / Hora', 40, startY, { width: 110, lineBreak: false });
-        doc.text('Referencia', 150, startY, { width: 75, lineBreak: false });
-        doc.text('Cédula', 230, startY, { width: 85, lineBreak: false });
-        doc.text('Teléfono', 320, startY, { width: 90, lineBreak: false });
+        doc.text('Fecha / Hora', 40, startY, { width: 180, lineBreak: false });
+        doc.text('Referencia', 250, startY, { width: 150, lineBreak: false });
         doc.text('Monto (Bs.)', 430, startY, { width: 142, align: 'right', lineBreak: false });
         
         doc.moveDown(1.2);
@@ -452,10 +454,8 @@ app.get('/api/cierre-pdf', async (req, res) => {
             }
 
             doc.fontSize(8.5).fillColor('#475569');
-            doc.text(fechaFormateada, 40, rowY, { width: 110, lineBreak: false });
-            doc.text(p.referencia || '-', 150, rowY, { width: 75, lineBreak: false });
-            doc.text(p.cedula || '-', 230, rowY, { width: 85, lineBreak: false });
-            doc.text(p.telefono || '-', 320, rowY, { width: 90, lineBreak: false });
+            doc.text(fechaFormateada, 40, rowY, { width: 180, lineBreak: false });
+            doc.text(p.referencia || '-', 250, rowY, { width: 150, lineBreak: false });
             doc.text(`Bs. ${Number(p.monto).toFixed(2)}`, 430, rowY, { width: 142, align: 'right', lineBreak: false });
             
             doc.moveDown(1.1);
