@@ -199,7 +199,7 @@ const htmlContent = `
                 const data = await res.json();
 
                 if (data.success) {
-                    totalMonto.textContent = \`Total Recaudado: $\${data.montoTotal} (\${data.totalTransacciones} pagos)\`;
+                    totalMonto.textContent = `Total Recaudado: $${data.montoTotal} (${data.totalTransacciones} pagos)`;
                     if (data.pagos.length === 0) {
                         listaReporte.innerHTML = '<div style="text-align: center; color: #64748b;">No hay pagos registrados aún.</div>';
                         return;
@@ -213,7 +213,7 @@ const htmlContent = `
                     });
                     listaReporte.innerHTML = html;
                 } else {
-                    listaReporte.innerHTML = '<div style="text-align: center; color: red;">Error al cargar reporte.</div>';
+                    listaReporte.innerHTML = \`<div style="text-align: center; color: red;">\${data.error || 'Error al cargar reporte.'}</div>\`;
                 }
             } catch (err) {
                 listaReporte.innerHTML = '<div style="text-align: center; color: red;">Error de conexión.</div>';
@@ -242,8 +242,8 @@ app.post('/api/verificar-pago', async (req, res) => {
         if (error) throw error;
         res.json({ success: true, mensaje: '¡Pago registrado con éxito!' });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, error: 'Error al registrar (referencia duplicada o datos inválidos).' });
+        console.error("Error al registrar:", err.message);
+        res.status(500).json({ success: false, error: err.message || 'Error al registrar pago.' });
     }
 });
 
@@ -252,9 +252,10 @@ app.get('/api/cierre-diario', async (req, res) => {
         const { data: pagos, error } = await supabase
             .from('pagos')
             .select('*')
-            .order('created_at', { ascending: false });
+            .order('fecha', { ascending: false });
 
         if (error) throw error;
+        
         let montoTotal = pagos.reduce((acc, p) => acc + parseFloat(p.monto || 0), 0);
 
         res.json({
@@ -264,25 +265,23 @@ app.get('/api/cierre-diario', async (req, res) => {
             pagos: pagos
         });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, error: 'Error al obtener el cierre.' });
+        console.error("Error en cierre diario:", err.message);
+        res.status(500).json({ success: false, error: err.message || 'Error al obtener el cierre.' });
     }
 });
 
-// Endpoint para generar y descargar/visualizar el PDF tipo Carta
 app.get('/api/cierre-pdf', async (req, res) => {
     try {
         const { data: pagos, error } = await supabase
             .from('pagos')
             .select('*')
-            .order('created_at', { ascending: false });
+            .order('fecha', { ascending: false });
 
         if (error) throw error;
 
         let montoTotal = pagos.reduce((acc, p) => acc + parseFloat(p.monto || 0), 0);
         const fechaActual = new Date().toLocaleString();
 
-        // Crear documento PDF tamaño Carta
         const doc = new PDFDocument({ size: 'LETTER', margin: 50 });
 
         res.setHeader('Content-Type', 'application/pdf');
@@ -290,21 +289,17 @@ app.get('/api/cierre-pdf', async (req, res) => {
 
         doc.pipe(res);
 
-        // Encabezado
         doc.fontSize(20).fillColor('#2c3e50').text('Cierre y Reporte Diario de Pagos', { align: 'center' });
         doc.fontSize(10).fillColor('#7f8c8d').text(`Fecha de emisión: ${fechaActual}`, { align: 'center' });
         doc.moveDown(1.5);
 
-        // Resumen
         doc.fontSize(12).fillColor('#333').text(`Total de Transacciones: ${pagos.length}`);
         doc.text(`Monto Total Recaudado: $${montoTotal.toFixed(2)}`);
         doc.moveDown(1);
 
-        // Línea divisoria
         doc.strokeColor('#cbd5e1').lineWidth(1).moveTo(50, doc.y).lineTo(562, doc.y).stroke();
         doc.moveDown(1);
 
-        // Tabla de pagos - Cabecera
         doc.fontSize(10).fillColor('#1e293b');
         const startY = doc.y;
         doc.text('Fecha / Hora', 50, startY, { width: 130 });
@@ -317,9 +312,8 @@ app.get('/api/cierre-pdf', async (req, res) => {
         doc.strokeColor('#e2e8f0').lineWidth(0.5).moveTo(50, doc.y).lineTo(562, doc.y).stroke();
         doc.moveDown(0.5);
 
-        // Listado de filas
         pagos.forEach((p) => {
-            const fechaFormateada = new Date(p.created_at).toLocaleString();
+            const fechaFormateada = p.fecha ? new Date(p.fecha).toLocaleString() : '-';
             const currentY = doc.y;
 
             if (currentY > 700) {
@@ -337,8 +331,8 @@ app.get('/api/cierre-pdf', async (req, res) => {
 
         doc.end();
     } catch (err) {
-        console.error(err);
-        res.status(500).send('Error al generar el PDF del cierre.');
+        console.error("Error al generar PDF:", err.message);
+        res.status(500).send('Error al generar el PDF del cierre: ' + err.message);
     }
 });
 
