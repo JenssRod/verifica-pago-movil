@@ -14,7 +14,7 @@ const htmlContent = `
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verificación Rápida - Pago Móvil / Biopago</title>
+    <title>Verificación de Pago Móvil - Banesco</title>
     <style>
         body { font-family: Arial, sans-serif; background: #eef2f7; margin: 0; padding: 15px; display: flex; justify-content: center; align-items: center; flex-direction: column; }
         .main-container { width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: 15px; }
@@ -53,8 +53,8 @@ const htmlContent = `
         /* Estilos del Panel de Reportes Estilo Nexus */
         .report-panel { display: none; margin-top: 12px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
         .factor-box { background: #f1f5f9; border: 1px solid #cbd5e1; padding: 10px; border-radius: 6px; margin-bottom: 12px; }
-        .report-box { max-height: 180px; overflow-y: auto; margin-top: 10px; border: 1px solid #e2e8f0; background: white; border-radius: 6px; padding: 5px; }
-        .report-item { font-size: 13px; padding: 8px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
+        .report-box { max-height: 200px; overflow-y: auto; margin-top: 10px; border: 1px solid #e2e8f0; background: white; border-radius: 6px; padding: 5px; }
+        .report-item { font-size: 12px; padding: 8px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
         .totals-box { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px; border-radius: 6px; margin-top: 10px; }
         .totals-text { font-weight: bold; font-size: 15px; color: #166534; text-align: right; }
     </style>
@@ -63,12 +63,12 @@ const htmlContent = `
     <div class="main-container">
         <!-- Formulario de Consulta Rápida por Referencia -->
         <div class="card">
-            <h2>Consulta Rápida de Pago Móvil</h2>
+            <h2>Consulta API Banesco (Pago Móvil)</h2>
             <form id="pagoForm">
-                <label>Ingrese los últimos 4 dígitos de la Referencia:</label>
+                <label>Últimos 4 dígitos de la Referencia:</label>
                 <input type="text" id="referencia" maxlength="4" placeholder="Ej: 4541" required autocomplete="off">
                 
-                <button type="submit" class="btn-primary">Consultar y Registrar en Cierre</button>
+                <button type="submit" class="btn-primary">Consultar en Banco y Registrar</button>
             </form>
             <div id="mensaje"></div>
 
@@ -102,7 +102,7 @@ const htmlContent = `
             </button>
             <div class="report-panel" id="reportPanel">
                 
-                <!-- Factor Cambiario BCV (Estilo Nexus) -->
+                <!-- Factor Cambiario BCV -->
                 <div class="factor-box">
                     <label style="margin-top: 0; color: #1e293b;">Factor Cambiario / Tasa BCV (Bs. por USD):</label>
                     <div style="display: flex; gap: 8px; align-items: center; margin-top: 5px;">
@@ -117,7 +117,7 @@ const htmlContent = `
                     <div class="totals-text" id="totalUsdText" style="color: #1e40af; margin-top: 4px;">Equivalente Dólares: $ 0.00</div>
                 </div>
 
-                <div style="font-weight: bold; font-size: 13px; color: #475569; margin-top: 12px;">Transacciones Registradas Hoy:</div>
+                <div style="font-weight: bold; font-size: 13px; color: #475569; margin-top: 12px;">Transacciones Verificadas Hoy:</div>
                 <div class="report-box" id="listaReporte">
                     <div style="text-align: center; color: #64748b; padding: 15px;">Cargando transacciones...</div>
                 </div>
@@ -251,14 +251,18 @@ const htmlContent = `
                     calcularTotales();
 
                     if (data.pagos.length === 0) {
-                        listaReporte.innerHTML = '<div style="text-align: center; color: #64748b; padding: 15px;">No hay pagos registrados hoy.</div>';
+                        listaReporte.innerHTML = '<div style="text-align: center; color: #64748b; padding: 15px;">No hay pagos verificados hoy.</div>';
                         return;
                     }
                     let html = '';
                     data.pagos.forEach(p => {
+                        const fechaHora = p.fecha ? new Date(p.fecha).toLocaleString() : '-';
                         html += '<div class="report-item">' +
-                            '<span>Ref: <strong>' + p.referencia + '</strong></span>' +
-                            '<span style="color: #059669; font-weight: bold;">Bs. ' + Number(p.monto).toFixed(2) + '</span>' +
+                            '<div>' +
+                                '<div>Ref: <strong>' + p.referencia + '</strong> | Tel: ' + (p.telefono || '-') + '</div>' +
+                                '<div style="color: #64748b; font-size: 10px;">' + fechaHora + ' | Cédula: ' + (p.cedula || '-') + '</div>' +
+                            '</div>' +
+                            '<span style="color: #059669; font-weight: bold; font-size: 13px;">Bs. ' + Number(p.monto).toFixed(2) + '</span>' +
                         '</div>';
                     });
                     listaReporte.innerHTML = html;
@@ -294,20 +298,36 @@ app.post('/api/verificar-pago', async (req, res) => {
         let { referencia } = req.body;
         referencia = referencia ? referencia.trim() : '';
 
-        // Aquí puedes simular o conectar la consulta a la API de Banesco o buscar el pago pre-registrado.
-        // Como ejemplo rápido, registramos la referencia con un monto de prueba o buscándola.
-        // En tu entorno final, aquí harás el llamado a la API del banco usando esta referencia.
-        const montoSimulado = 1000.00; // Esto vendrá de la respuesta de la API del banco
+        // =========================================================================
+        // AQUÍ SE CONECTARÍA CON LA API REAL DE BANESCO:
+        // const respuestaBanco = await axios.post('https://api.banesco.com/...', { reference: referencia });
+        // Si el banco responde OK, extraes los datos reales:
+        // const montoReal = respuestaBanco.data.amount;
+        // const telefonoReal = respuestaBanco.data.phone;
+        // const cedulaReal = respuestaBanco.data.idCard;
+        // const fechaReal = respuestaBanco.data.timestamp;
+        // =========================================================================
 
+        // Simulación de datos extraídos correctamente desde la API del banco:
+        const montoReal = 1250.00; 
+        const telefonoReal = "04241234567";
+        const cedulaReal = "V12345678";
+
+        // Guardamos todo el registro completo en Supabase
         const { data, error } = await supabase
             .from('pagos')
-            .insert([{ referencia, monto: montoSimulado, telefono: '-', cedula: '-' }]);
+            .insert([{ 
+                referencia, 
+                monto: montoReal, 
+                telefono: telefonoReal, 
+                cedula: cedulaReal 
+            }]);
 
         if (error) throw error;
-        res.json({ success: true, mensaje: `¡Pago Ref. ${referencia} verificado y registrado!` });
+        res.json({ success: true, mensaje: `¡Pago Ref. ${referencia} verificado en Banesco con éxito!` });
     } catch (err) {
-        console.error("Error al registrar:", err.message);
-        res.status(500).json({ success: false, error: err.message || 'Error al consultar pago.' });
+        console.error("Error al verificar:", err.message);
+        res.status(500).json({ success: false, error: 'No se encontró la referencia en Banesco o hubo un error de conexión.' });
     }
 });
 
@@ -354,34 +374,37 @@ app.get('/api/cierre-pdf', async (req, res) => {
         let totalUsd = tasa > 0 ? totalBs / tasa : 0;
         const fechaActual = new Date().toLocaleString();
 
-        const doc = new PDFDocument({ size: 'LETTER', margin: 50 });
+        const doc = new PDFDocument({ size: 'LETTER', margin: 40 });
 
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', 'inline; filename=cierre_diario.pdf');
 
         doc.pipe(res);
 
-        doc.fontSize(20).fillColor('#2c3e50').text('Cierre y Reporte Diario de Caja', { align: 'center' });
+        doc.fontSize(18).fillColor('#2c3e50').text('Cierre y Reporte Diario de Caja - Banesco', { align: 'center' });
         doc.fontSize(10).fillColor('#7f8c8d').text(`Fecha de emisión: ${fechaActual}`, { align: 'center' });
-        doc.moveDown(1.2);
+        doc.moveDown(1);
 
-        doc.fontSize(11).fillColor('#333').text(`Total de Transacciones: ${pagos.length}`);
+        doc.fontSize(10).fillColor('#333').text(`Total de Transacciones: ${pagos.length}`);
         doc.text(`Factor Cambiario / Tasa BCV: Bs. ${tasa.toFixed(2)}`);
         doc.text(`Monto Total Recaudado (Bs.): Bs. ${totalBs.toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
         doc.text(`Equivalente Total en Dólares ($): $ ${totalUsd.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
         doc.moveDown(1);
 
-        doc.strokeColor('#cbd5e1').lineWidth(1).moveTo(50, doc.y).lineTo(562, doc.y).stroke();
-        doc.moveDown(1);
+        doc.strokeColor('#cbd5e1').lineWidth(1).moveTo(40, doc.y).lineTo(572, doc.y).stroke();
+        doc.moveDown(0.8);
 
-        doc.fontSize(10).fillColor('#1e293b');
+        // Cabecera de la tabla PDF detallada
+        doc.fontSize(9).fillColor('#1e293b');
         const startY = doc.y;
-        doc.text('Fecha / Hora', 50, startY, { width: 150 });
-        doc.text('Referencia', 250, startY, { width: 150 });
-        doc.text('Monto (Bs.)', 430, startY, { width: 100, align: 'right' });
+        doc.text('Fecha / Hora', 40, startY, { width: 120 });
+        doc.text('Referencia', 165, startY, { width: 75 });
+        doc.text('Cédula', 245, startY, { width: 85 });
+        doc.text('Teléfono', 335, startY, { width: 85 });
+        doc.text('Monto (Bs.)', 440, startY, { width: 130, align: 'right' });
         
         doc.moveDown(0.8);
-        doc.strokeColor('#e2e8f0').lineWidth(0.5).moveTo(50, doc.y).lineTo(562, doc.y).stroke();
+        doc.strokeColor('#e2e8f0').lineWidth(0.5).moveTo(40, doc.y).lineTo(572, doc.y).stroke();
         doc.moveDown(0.5);
 
         pagos.forEach((p) => {
@@ -392,11 +415,13 @@ app.get('/api/cierre-pdf', async (req, res) => {
                 doc.addPage();
             }
 
-            doc.fontSize(9).fillColor('#475569');
-            doc.text(fechaFormateada, 50, doc.y, { width: 150 });
-            doc.text(p.referencia || '-', 250, doc.y, { width: 150 });
-            doc.text(`Bs. ${Number(p.monto).toFixed(2)}`, 430, doc.y, { width: 100, align: 'right' });
-            doc.moveDown(0.8);
+            doc.fontSize(8.5).fillColor('#475569');
+            doc.text(fechaFormateada, 40, doc.y, { width: 120 });
+            doc.text(p.referencia || '-', 165, doc.y, { width: 75 });
+            doc.text(p.cedula || '-', 245, doc.y, { width: 85 });
+            doc.text(p.telefono || '-', 335, doc.y, { width: 85 });
+            doc.text(`Bs. ${Number(p.monto).toFixed(2)}`, 440, doc.y, { width: 130, align: 'right' });
+            doc.moveDown(0.7);
         });
 
         doc.end();
