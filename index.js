@@ -49,9 +49,10 @@ const htmlContent = `
 
         /* Estilos del Panel de Reportes Colapsable */
         .report-panel { display: none; margin-top: 12px; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; }
-        .report-box { max-height: 180px; overflow-y: auto; margin-top: 10px; }
+        .report-box { max-height: 160px; overflow-y: auto; margin-top: 10px; }
         .report-item { font-size: 13px; padding: 6px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; }
-        .totals { font-weight: bold; font-size: 15px; color: #059669; margin-top: 8px; text-align: right; }
+        .totals-box { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px; border-radius: 6px; margin-top: 8px; }
+        .totals-text { font-weight: bold; font-size: 14px; color: #166534; text-align: right; }
     </style>
 </head>
 <body>
@@ -63,8 +64,8 @@ const htmlContent = `
                 <label>Referencia (últimos dígitos):</label>
                 <input type="text" id="referencia" placeholder="Ej: 4541" required>
                 
-                <label>Monto:</label>
-                <input type="text" id="monto" placeholder="Ej: 1200" required>
+                <label>Monto (Bs.):</label>
+                <input type="text" id="monto" placeholder="Ej: 1500.00" required>
                 
                 <label>Teléfono:</label>
                 <input type="text" id="telefono" placeholder="Ej: 0424..." required>
@@ -102,15 +103,22 @@ const htmlContent = `
         <!-- Botón y Panel de Reportes Diario -->
         <div class="card" style="padding: 15px;">
             <button class="btn-toggle" onclick="toggleReporte()">
-                <span>📊</span> <span id="toggleReportText">Ver Cierre y Reporte Diario</span>
+                <span>📊</span> <span id="toggleReportText">Ver Cierre y Reporte de Hoy</span>
             </button>
             <div class="report-panel" id="reportPanel">
-                <div class="totals" id="totalMonto">Total Recaudado: $0.00</div>
-                <div class="report-box" id="listaReporte">
-                    <div style="text-align: center; color: #64748b;">Cargando transacciones...</div>
+                <label style="font-size: 13px; margin-top: 0;">Tasa BCV del Dólar (Bs.):</label>
+                <input type="text" id="tasaBcv" value="36.50" oninput="calcularTotales()" style="padding: 8px; font-size: 14px;">
+
+                <div class="totals-box">
+                    <div class="totals-text" id="totalBsText">Total Bs.: Bs. 0.00</div>
+                    <div class="totals-text" id="totalUsdText" style="color: #1e40af; margin-top: 4px;">Equivalente USD: $ 0.00</div>
                 </div>
-                <a href="/api/cierre-pdf" target="_blank" class="btn-pdf">
-                    <span>📄</span> Descargar / Imprimir Cierre PDF
+
+                <div class="report-box" id="listaReporte">
+                    <div style="text-align: center; color: #64748b;">Cargando transacciones de hoy...</div>
+                </div>
+                <a id="btnPdfLink" href="/api/cierre-pdf?tasa=36.50" target="_blank" class="btn-pdf">
+                    <span>📄</span> Descargar / Imprimir Cierre de Hoy PDF
                 </a>
             </div>
         </div>
@@ -118,14 +126,17 @@ const htmlContent = `
 
     <script>
         let activeInput = null;
+        let globalDataPagos = [];
         const keyboard = document.getElementById('virtualKeyboard');
 
-        ['referencia', 'monto', 'telefono', 'cedula'].forEach(id => {
+        ['referencia', 'monto', 'telefono', 'cedula', 'tasaBcv'].forEach(id => {
             const input = document.getElementById(id);
-            input.addEventListener('focus', () => {
-                activeInput = input;
-                keyboard.style.display = 'block';
-            });
+            if(input) {
+                input.addEventListener('focus', () => {
+                    activeInput = input;
+                    if(id !== 'tasaBcv') keyboard.style.display = 'block';
+                });
+            }
         });
 
         function hideKeyboard() {
@@ -133,15 +144,15 @@ const htmlContent = `
         }
 
         function insertKey(val) {
-            if (activeInput) activeInput.value += val;
+            if (activeInput && activeInput.id !== 'tasaBcv') activeInput.value += val;
         }
 
         function backspaceKey() {
-            if (activeInput) activeInput.value = activeInput.value.slice(0, -1);
+            if (activeInput && activeInput.id !== 'tasaBcv') activeInput.value = activeInput.value.slice(0, -1);
         }
 
         function clearInput() {
-            if (activeInput) activeInput.value = '';
+            if (activeInput && activeInput.id !== 'tasaBcv') activeInput.value = '';
         }
 
         function toggleReporte() {
@@ -149,7 +160,7 @@ const htmlContent = `
             const text = document.getElementById('toggleReportText');
             if (panel.style.display === 'block') {
                 panel.style.display = 'none';
-                text.textContent = 'Ver Cierre y Reporte Diario';
+                text.textContent = 'Ver Cierre y Reporte de Hoy';
             } else {
                 panel.style.display = 'block';
                 text.textContent = 'Ocultar Cierre y Reporte';
@@ -192,23 +203,24 @@ const htmlContent = `
 
         async function cargarReporte() {
             const listaReporte = document.getElementById('listaReporte');
-            const totalMonto = document.getElementById('totalMonto');
 
             try {
                 const res = await fetch('/api/cierre-diario');
                 const data = await res.json();
 
                 if (data.success) {
-                    totalMonto.textContent = 'Total Recaudado: $' + data.montoTotal + ' (' + data.totalTransacciones + ' pagos)';
+                    globalDataPagos = data.pagos;
+                    calcularTotales();
+
                     if (data.pagos.length === 0) {
-                        listaReporte.innerHTML = '<div style="text-align: center; color: #64748b;">No hay pagos registrados aún.</div>';
+                        listaReporte.innerHTML = '<div style="text-align: center; color: #64748b;">No hay pagos registrados hoy.</div>';
                         return;
                     }
                     let html = '';
                     data.pagos.forEach(p => {
                         html += '<div class="report-item">' +
                             '<span>Ref: <strong>' + p.referencia + '</strong> | Cédula: ' + p.cedula + '</span>' +
-                            '<span style="color: #059669; font-weight: bold;">$' + p.monto + '</span>' +
+                            '<span style="color: #059669; font-weight: bold;">Bs. ' + Number(p.monto).toFixed(2) + '</span>' +
                         '</div>';
                     });
                     listaReporte.innerHTML = html;
@@ -218,6 +230,17 @@ const htmlContent = `
             } catch (err) {
                 listaReporte.innerHTML = '<div style="text-align: center; color: red;">Error de conexión.</div>';
             }
+        }
+
+        function calcularTotales() {
+            let tasa = parseFloat(document.getElementById('tasaBcv').value) || 1;
+            let totalBs = globalDataPagos.reduce((acc, p) => acc + parseFloat(p.monto || 0), 0);
+            let totalUsd = tasa > 0 ? totalBs / tasa : 0;
+
+            document.getElementById('totalBsText').textContent = 'Total Bs.: Bs. ' + totalBs.toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('totalUsdText').textContent = 'Equivalente USD: $ ' + totalUsd.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+            document.getElementById('btnPdfLink').href = '/api/cierre-pdf?tasa=' + tasa;
         }
     </script>
 </body>
@@ -247,21 +270,23 @@ app.post('/api/verificar-pago', async (req, res) => {
     }
 });
 
+// Endpoint modificado para filtrar únicamente las transacciones del día actual (Hora Venezuela/Servidor)
 app.get('/api/cierre-diario', async (req, res) => {
     try {
+        const hoyInicio = new Date();
+        hoyInicio.setHours(0, 0, 0, 0);
+
         const { data: pagos, error } = await supabase
             .from('pagos')
             .select('*')
+            .gte('fecha', hoyInicio.toISOString())
             .order('fecha', { ascending: false });
 
         if (error) throw error;
         
-        let montoTotal = pagos.reduce((acc, p) => acc + parseFloat(p.monto || 0), 0);
-
         res.json({
             success: true,
             totalTransacciones: pagos.length,
-            montoTotal: montoTotal.toFixed(2),
             pagos: pagos
         });
     } catch (err) {
@@ -270,16 +295,24 @@ app.get('/api/cierre-diario', async (req, res) => {
     }
 });
 
+// Endpoint del PDF también adaptado solo para el día de hoy
 app.get('/api/cierre-pdf', async (req, res) => {
     try {
+        const tasa = parseFloat(req.query.tasa) || 1;
+        
+        const hoyInicio = new Date();
+        hoyInicio.setHours(0, 0, 0, 0);
+
         const { data: pagos, error } = await supabase
             .from('pagos')
             .select('*')
+            .gte('fecha', hoyInicio.toISOString())
             .order('fecha', { ascending: false });
 
         if (error) throw error;
 
-        let montoTotal = pagos.reduce((acc, p) => acc + parseFloat(p.monto || 0), 0);
+        let totalBs = pagos.reduce((acc, p) => acc + parseFloat(p.monto || 0), 0);
+        let totalUsd = tasa > 0 ? totalBs / tasa : 0;
         const fechaActual = new Date().toLocaleString();
 
         const doc = new PDFDocument({ size: 'LETTER', margin: 50 });
@@ -291,10 +324,12 @@ app.get('/api/cierre-pdf', async (req, res) => {
 
         doc.fontSize(20).fillColor('#2c3e50').text('Cierre y Reporte Diario de Pagos', { align: 'center' });
         doc.fontSize(10).fillColor('#7f8c8d').text(`Fecha de emisión: ${fechaActual}`, { align: 'center' });
-        doc.moveDown(1.5);
+        doc.moveDown(1.2);
 
-        doc.fontSize(12).fillColor('#333').text(`Total de Transacciones: ${pagos.length}`);
-        doc.text(`Monto Total Recaudado: $${montoTotal.toFixed(2)}`);
+        doc.fontSize(11).fillColor('#333').text(`Total de Transacciones de Hoy: ${pagos.length}`);
+        doc.text(`Tasa BCV Aplicada: Bs. ${tasa.toFixed(2)}`);
+        doc.text(`Monto Total Recaudado (Bs.): Bs. ${totalBs.toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
+        doc.text(`Equivalente Total en Dólares ($): $ ${totalUsd.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
         doc.moveDown(1);
 
         doc.strokeColor('#cbd5e1').lineWidth(1).moveTo(50, doc.y).lineTo(562, doc.y).stroke();
@@ -302,11 +337,11 @@ app.get('/api/cierre-pdf', async (req, res) => {
 
         doc.fontSize(10).fillColor('#1e293b');
         const startY = doc.y;
-        doc.text('Fecha / Hora', 50, startY, { width: 130 });
-        doc.text('Referencia', 185, startY, { width: 90 });
-        doc.text('Cédula', 280, startY, { width: 90 });
-        doc.text('Teléfono', 375, startY, { width: 90 });
-        doc.text('Monto ($)', 470, startY, { width: 80, align: 'right' });
+        doc.text('Fecha / Hora', 50, startY, { width: 120 });
+        doc.text('Referencia', 170, startY, { width: 80 });
+        doc.text('Cédula', 255, startY, { width: 80 });
+        doc.text('Teléfono', 340, startY, { width: 80 });
+        doc.text('Monto (Bs.)', 430, startY, { width: 100, align: 'right' });
         
         doc.moveDown(0.8);
         doc.strokeColor('#e2e8f0').lineWidth(0.5).moveTo(50, doc.y).lineTo(562, doc.y).stroke();
@@ -321,11 +356,11 @@ app.get('/api/cierre-pdf', async (req, res) => {
             }
 
             doc.fontSize(9).fillColor('#475569');
-            doc.text(fechaFormateada, 50, doc.y, { width: 130 });
-            doc.text(p.referencia || '-', 185, doc.y, { width: 90 });
-            doc.text(p.cedula || '-', 280, doc.y, { width: 90 });
-            doc.text(p.telefono || '-', 375, doc.y, { width: 90 });
-            doc.text(`$${Number(p.monto).toFixed(2)}`, 470, doc.y, { width: 80, align: 'right' });
+            doc.text(fechaFormateada, 50, doc.y, { width: 120 });
+            doc.text(p.referencia || '-', 170, doc.y, { width: 80 });
+            doc.text(p.cedula || '-', 255, doc.y, { width: 80 });
+            doc.text(p.telefono || '-', 340, doc.y, { width: 80 });
+            doc.text(`Bs. ${Number(p.monto).toFixed(2)}`, 430, doc.y, { width: 100, align: 'right' });
             doc.moveDown(0.8);
         });
 
