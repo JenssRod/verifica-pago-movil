@@ -14,12 +14,19 @@ const htmlContent = `
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verificación de Pago Móvil - Banesco</title>
+    <title>Verificador de Pago Móvil</title>
     <style>
         body { font-family: Arial, sans-serif; background: #eef2f7; margin: 0; padding: 15px; display: flex; justify-content: center; align-items: center; flex-direction: column; }
         .main-container { width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: 15px; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        h2 { text-align: center; color: #2c3e50; margin-top: 0; font-size: 22px; }
+        
+        /* Estilos del Logo */
+        .logo-container { text-align: center; margin-bottom: 10px; }
+        .logo-container svg { max-width: 220px; height: auto; }
+
+        h2 { text-align: center; color: #2c3e50; margin-top: 5px; margin-bottom: 4px; font-size: 22px; }
+        .brand-subtitle { text-align: center; color: #64748b; font-size: 12px; font-weight: bold; letter-spacing: 1px; margin-bottom: 15px; text-transform: uppercase; }
+        
         label { display: block; margin-top: 10px; font-weight: bold; color: #34495e; font-size: 14px; }
         input { width: 100%; padding: 14px; margin-top: 5px; box-sizing: border-box; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 18px; background: #f8fafc; text-align: center; letter-spacing: 2px; }
         input:focus { border-color: #3b82f6; outline: none; background: white; }
@@ -50,7 +57,7 @@ const htmlContent = `
         .key-clear { background: #fee2e2; color: #dc2626; }
         .key-back { background: #fef3c7; color: #d97706; }
 
-        /* Estilos del Panel de Reportes Estilo Nexus */
+        /* Estilos del Panel de Reportes */
         .report-panel { display: none; margin-top: 12px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
         .factor-box { background: #f1f5f9; border: 1px solid #cbd5e1; padding: 10px; border-radius: 6px; margin-bottom: 12px; }
         .report-box { max-height: 200px; overflow-y: auto; margin-top: 10px; border: 1px solid #e2e8f0; background: white; border-radius: 6px; padding: 5px; }
@@ -63,7 +70,44 @@ const htmlContent = `
     <div class="main-container">
         <!-- Formulario de Consulta Rápida por Referencia -->
         <div class="card">
-            <h2>Consulta API Banesco (Pago Móvil)</h2>
+            <!-- LOGO INTEGRADO -->
+            <div class="logo-container">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 200" width="100%" height="100%">
+                  <defs>
+                    <linearGradient id="techGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="#2563eb" />
+                      <stop offset="100%" stop-color="#1e1b4b" />
+                    </linearGradient>
+                    <linearGradient id="cyanGlow" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stop-color="#38bdf8" />
+                      <stop offset="100%" stop-color="#2563eb" />
+                    </linearGradient>
+                  </defs>
+
+                  <rect width="100%" height="100%" rx="16" fill="#0f172a" />
+
+                  <g transform="translate(30, 25)">
+                    <polygon points="60,10 110,35 110,95 60,120 10,95 10,35" fill="none" stroke="url(#cyanGlow)" stroke-width="3" opacity="0.4" />
+                    <circle cx="60" cy="10" r="4" fill="#38bdf8" />
+                    <circle cx="110" cy="95" r="4" fill="#2563eb" />
+                    <circle cx="10" cy="95" r="4" fill="#38bdf8" />
+                    <path d="M 45 35 L 45 80 C 45 95, 65 95, 75 85 L 75 70" fill="none" stroke="#38bdf8" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M 65 35 L 90 35 C 102 35, 102 60, 90 60 L 65 60 M 80 55 L 100 85" fill="none" stroke="url(#techGradient)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" />
+                    <circle cx="65" cy="60" r="5" fill="#ffffff" />
+                  </g>
+
+                  <g transform="translate(160, 85)">
+                    <text x="0" y="10" font-family="system-ui, sans-serif" font-weight="900" font-size="34" fill="#ffffff" letter-spacing="2">JR</text>
+                    <text x="55" y="10" font-family="system-ui, sans-serif" font-weight="600" font-size="34" fill="#38bdf8" letter-spacing="1">.</text>
+                    <text x="0" y="42" font-family="system-ui, sans-serif" font-weight="bold" font-size="14" fill="#94a3b8" letter-spacing="4.5">SOLUCIONES TECNOLOGICAS</text>
+                    <line x1="0" y1="52" x2="295" y2="52" stroke="url(#cyanGlow)" stroke-width="2" stroke-linecap="round" />
+                  </g>
+                </svg>
+            </div>
+
+            <h2>Verificador de Pago Móvil</h2>
+            <div class="brand-subtitle">by JR SOLUCIONES TECNOLOGICAS</div>
+            
             <form id="pagoForm">
                 <label>Últimos 4 dígitos de la Referencia:</label>
                 <input type="text" id="referencia" maxlength="4" placeholder="Ej: 4541" required autocomplete="off">
@@ -95,7 +139,7 @@ const htmlContent = `
             </div>
         </div>
 
-        <!-- Módulo de Factores y Cierre Diario (Estilo Nexus) -->
+        <!-- Módulo de Factores y Cierre Diario -->
         <div class="card" style="padding: 15px;">
             <button class="btn-toggle" onclick="toggleReporte()">
                 <span>📊</span> <span id="toggleReportText">Módulo de Cierre y Factor Cambiario</span>
@@ -298,7 +342,7 @@ app.post('/api/verificar-pago', async (req, res) => {
         let { referencia } = req.body;
         referencia = referencia ? referencia.trim() : '';
 
-        // Simulación de datos extraídos desde la API de Banesco
+        // Simulación de datos extraídos
         const montoReal = 1250.00; 
         const telefonoReal = "04241234567";
         const cedulaReal = "V12345678";
@@ -313,10 +357,10 @@ app.post('/api/verificar-pago', async (req, res) => {
             }]);
 
         if (error) throw error;
-        res.json({ success: true, mensaje: `¡Pago Ref. ${referencia} verificado en Banesco con éxito!` });
+        res.json({ success: true, mensaje: `¡Pago Ref. ${referencia} verificado y registrado con éxito!` });
     } catch (err) {
         console.error("Error al verificar:", err.message);
-        res.status(500).json({ success: false, error: 'No se encontró la referencia en Banesco o hubo un error de conexión.' });
+        res.status(500).json({ success: false, error: 'No se encontró la referencia o hubo un error de conexión.' });
     }
 });
 
@@ -370,8 +414,9 @@ app.get('/api/cierre-pdf', async (req, res) => {
 
         doc.pipe(res);
 
-        doc.fontSize(18).fillColor('#2c3e50').text('Cierre y Reporte Diario de Caja - Banesco', { align: 'center' });
-        doc.fontSize(10).fillColor('#7f8c8d').text(`Fecha de emisión: ${fechaActual}`, { align: 'center' });
+        doc.fontSize(18).fillColor('#2c3e50').text('Verificador de Pago Móvil', { align: 'center' });
+        doc.fontSize(11).fillColor('#64748b').text('by JR SOLUCIONES TECNOLOGICAS', { align: 'center' });
+        doc.fontSize(9).fillColor('#7f8c8d').text(`Cierre y Reporte Diario de Caja — Emisión: ${fechaActual}`, { align: 'center' });
         doc.moveDown(1);
 
         doc.fontSize(10).fillColor('#333').text(`Total de Transacciones: ${pagos.length}`);
@@ -383,7 +428,7 @@ app.get('/api/cierre-pdf', async (req, res) => {
         doc.strokeColor('#cbd5e1').lineWidth(1).moveTo(40, doc.y).lineTo(572, doc.y).stroke();
         doc.moveDown(0.8);
 
-        // Cabecera de la tabla PDF usando coordenadas fijas (y)
+        // Cabecera de la tabla PDF
         doc.fontSize(9).fillColor('#1e293b');
         let startY = doc.y;
         doc.text('Fecha / Hora', 40, startY, { width: 110, lineBreak: false });
@@ -405,7 +450,6 @@ app.get('/api/cierre-pdf', async (req, res) => {
                 rowY = doc.y;
             }
 
-            // Cada columna se dibuja limpiamente en la misma línea horizontal (rowY)
             doc.fontSize(8.5).fillColor('#475569');
             doc.text(fechaFormateada, 40, rowY, { width: 110, lineBreak: false });
             doc.text(p.referencia || '-', 150, rowY, { width: 75, lineBreak: false });
