@@ -383,18 +383,18 @@ app.get('/api/cierre-pdf', async (req, res) => {
         doc.strokeColor('#cbd5e1').lineWidth(1).moveTo(40, doc.y).lineTo(572, doc.y).stroke();
         doc.moveDown(0.8);
 
-        // Cabecera de la tabla PDF alineada correctamente con continued: true
+        // Cabecera de la tabla PDF usando coordenadas fijas (y)
         doc.fontSize(9).fillColor('#1e293b');
         let startY = doc.y;
-        doc.text('Fecha / Hora', 40, startY, { width: 110, continued: true });
-        doc.text('Referencia', 150, startY, { width: 75, continued: true });
-        doc.text('Cédula', 230, startY, { width: 85, continued: true });
-        doc.text('Teléfono', 320, startY, { width: 90, continued: true });
-        doc.text('Monto (Bs.)', 430, startY, { width: 142, align: 'right' });
+        doc.text('Fecha / Hora', 40, startY, { width: 110, lineBreak: false });
+        doc.text('Referencia', 150, startY, { width: 75, lineBreak: false });
+        doc.text('Cédula', 230, startY, { width: 85, lineBreak: false });
+        doc.text('Teléfono', 320, startY, { width: 90, lineBreak: false });
+        doc.text('Monto (Bs.)', 430, startY, { width: 142, align: 'right', lineBreak: false });
         
-        doc.moveDown(0.8);
+        doc.moveDown(1.2);
         doc.strokeColor('#e2e8f0').lineWidth(0.5).moveTo(40, doc.y).lineTo(572, doc.y).stroke();
-        doc.moveDown(0.5);
+        doc.moveDown(0.6);
 
         pagos.forEach((p) => {
             const fechaFormateada = p.fecha ? new Date(p.fecha).toLocaleString() : '-';
@@ -405,14 +405,15 @@ app.get('/api/cierre-pdf', async (req, res) => {
                 rowY = doc.y;
             }
 
+            // Cada columna se dibuja limpiamente en la misma línea horizontal (rowY)
             doc.fontSize(8.5).fillColor('#475569');
-            doc.text(fechaFormateada, 40, rowY, { width: 110, continued: true });
-            doc.text(p.referencia || '-', 150, rowY, { width: 75, continued: true });
-            doc.text(p.cedula || '-', 230, rowY, { width: 85, continued: true });
-            doc.text(p.telefono || '-', 320, rowY, { width: 90, continued: true });
-            doc.text(`Bs. ${Number(p.monto).toFixed(2)}`, 430, rowY, { width: 142, align: 'right' });
+            doc.text(fechaFormateada, 40, rowY, { width: 110, lineBreak: false });
+            doc.text(p.referencia || '-', 150, rowY, { width: 75, lineBreak: false });
+            doc.text(p.cedula || '-', 230, rowY, { width: 85, lineBreak: false });
+            doc.text(p.telefono || '-', 320, rowY, { width: 90, lineBreak: false });
+            doc.text(`Bs. ${Number(p.monto).toFixed(2)}`, 430, rowY, { width: 142, align: 'right', lineBreak: false });
             
-            doc.moveDown(0.9);
+            doc.moveDown(1.1);
         });
 
         doc.end();
