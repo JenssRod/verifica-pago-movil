@@ -298,22 +298,11 @@ app.post('/api/verificar-pago', async (req, res) => {
         let { referencia } = req.body;
         referencia = referencia ? referencia.trim() : '';
 
-        // =========================================================================
-        // AQUÍ SE CONECTARÍA CON LA API REAL DE BANESCO:
-        // const respuestaBanco = await axios.post('https://api.banesco.com/...', { reference: referencia });
-        // Si el banco responde OK, extraes los datos reales:
-        // const montoReal = respuestaBanco.data.amount;
-        // const telefonoReal = respuestaBanco.data.phone;
-        // const cedulaReal = respuestaBanco.data.idCard;
-        // const fechaReal = respuestaBanco.data.timestamp;
-        // =========================================================================
-
-        // Simulación de datos extraídos correctamente desde la API del banco:
+        // Simulación de datos extraídos desde la API de Banesco
         const montoReal = 1250.00; 
         const telefonoReal = "04241234567";
         const cedulaReal = "V12345678";
 
-        // Guardamos todo el registro completo en Supabase
         const { data, error } = await supabase
             .from('pagos')
             .insert([{ 
@@ -394,14 +383,14 @@ app.get('/api/cierre-pdf', async (req, res) => {
         doc.strokeColor('#cbd5e1').lineWidth(1).moveTo(40, doc.y).lineTo(572, doc.y).stroke();
         doc.moveDown(0.8);
 
-        // Cabecera de la tabla PDF detallada
+        // Cabecera de la tabla PDF alineada correctamente con continued: true
         doc.fontSize(9).fillColor('#1e293b');
-        const startY = doc.y;
-        doc.text('Fecha / Hora', 40, startY, { width: 120 });
-        doc.text('Referencia', 165, startY, { width: 75 });
-        doc.text('Cédula', 245, startY, { width: 85 });
-        doc.text('Teléfono', 335, startY, { width: 85 });
-        doc.text('Monto (Bs.)', 440, startY, { width: 130, align: 'right' });
+        let startY = doc.y;
+        doc.text('Fecha / Hora', 40, startY, { width: 110, continued: true });
+        doc.text('Referencia', 150, startY, { width: 75, continued: true });
+        doc.text('Cédula', 230, startY, { width: 85, continued: true });
+        doc.text('Teléfono', 320, startY, { width: 90, continued: true });
+        doc.text('Monto (Bs.)', 430, startY, { width: 142, align: 'right' });
         
         doc.moveDown(0.8);
         doc.strokeColor('#e2e8f0').lineWidth(0.5).moveTo(40, doc.y).lineTo(572, doc.y).stroke();
@@ -409,19 +398,21 @@ app.get('/api/cierre-pdf', async (req, res) => {
 
         pagos.forEach((p) => {
             const fechaFormateada = p.fecha ? new Date(p.fecha).toLocaleString() : '-';
-            const currentY = doc.y;
+            let rowY = doc.y;
 
-            if (currentY > 700) {
+            if (rowY > 700) {
                 doc.addPage();
+                rowY = doc.y;
             }
 
             doc.fontSize(8.5).fillColor('#475569');
-            doc.text(fechaFormateada, 40, doc.y, { width: 120 });
-            doc.text(p.referencia || '-', 165, doc.y, { width: 75 });
-            doc.text(p.cedula || '-', 245, doc.y, { width: 85 });
-            doc.text(p.telefono || '-', 335, doc.y, { width: 85 });
-            doc.text(`Bs. ${Number(p.monto).toFixed(2)}`, 440, doc.y, { width: 130, align: 'right' });
-            doc.moveDown(0.7);
+            doc.text(fechaFormateada, 40, rowY, { width: 110, continued: true });
+            doc.text(p.referencia || '-', 150, rowY, { width: 75, continued: true });
+            doc.text(p.cedula || '-', 230, rowY, { width: 85, continued: true });
+            doc.text(p.telefono || '-', 320, rowY, { width: 90, continued: true });
+            doc.text(`Bs. ${Number(p.monto).toFixed(2)}`, 430, rowY, { width: 142, align: 'right' });
+            
+            doc.moveDown(0.9);
         });
 
         doc.end();
