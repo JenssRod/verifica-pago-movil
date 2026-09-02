@@ -7,7 +7,6 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
-// Interfaz web optimizada para pantallas táctiles (Biopago) con teclado numérico y reportes
 const htmlContent = `
 <!DOCTYPE html>
 <html lang="es">
@@ -17,28 +16,38 @@ const htmlContent = `
     <title>Verificación de Pago Móvil - Biopago</title>
     <style>
         body { font-family: Arial, sans-serif; background: #eef2f7; margin: 0; padding: 15px; display: flex; justify-content: center; align-items: center; flex-direction: column; }
-        .main-container { width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 20px; }
+        .main-container { width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 15px; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        h2 { text-align: center; color: #2c3e50; margin-top: 0; }
-        label { display: block; margin-top: 12px; font-weight: bold; color: #34495e; font-size: 16px; }
-        input { width: 100%; padding: 14px; margin-top: 6px; box-sizing: border-box; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 18px; background: #f8fafc; }
+        h2 { text-align: center; color: #2c3e50; margin-top: 0; font-size: 22px; }
+        label { display: block; margin-top: 10px; font-weight: bold; color: #34495e; font-size: 15px; }
+        input { width: 100%; padding: 12px; margin-top: 5px; box-sizing: border-box; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 16px; background: #f8fafc; }
         input:focus { border-color: #3b82f6; outline: none; background: white; }
-        .btn-primary { width: 100%; background: #2563eb; color: white; padding: 16px; border: none; border-radius: 8px; margin-top: 20px; cursor: pointer; font-size: 18px; font-weight: bold; }
-        .btn-primary:active { background: #1d4ed8; transform: scale(0.98); }
-        .btn-secondary { width: 100%; background: #059669; color: white; padding: 14px; border: none; border-radius: 8px; margin-top: 10px; cursor: pointer; font-size: 16px; font-weight: bold; }
-        #mensaje { margin-top: 15px; text-align: center; font-weight: bold; font-size: 16px; }
+        
+        .btn-primary { width: 100%; background: #2563eb; color: white; padding: 14px; border: none; border-radius: 8px; margin-top: 18px; cursor: pointer; font-size: 16px; font-weight: bold; }
+        .btn-primary:active { background: #1d4ed8; }
+        
+        .btn-toggle { width: 100%; background: #475569; color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: bold; display: flex; justify-content: center; align-items: center; gap: 8px; transition: background 0.2s; }
+        .btn-toggle:hover { background: #334155; }
+        
+        #mensaje { margin-top: 12px; text-align: center; font-weight: bold; font-size: 15px; }
 
-        /* Estilos del Teclado Numérico Virtual Táctil */
-        .keyboard { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; background: #e2e8f0; padding: 12px; border-radius: 10px; }
-        .key { background: white; border: 1px solid #cbd5e1; padding: 18px; font-size: 22px; font-weight: bold; text-align: center; border-radius: 8px; cursor: pointer; user-select: none; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        /* Estilos del Teclado Numérico Virtual */
+        .keyboard-container { display: none; margin-top: 12px; background: #e2e8f0; padding: 10px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .keyboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding: 0 4px; }
+        .keyboard-title { font-size: 13px; font-weight: bold; color: #475569; }
+        .close-keyboard { background: #ef4444; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer; }
+        
+        .keyboard-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .key { background: white; border: 1px solid #cbd5e1; padding: 14px; font-size: 20px; font-weight: bold; text-align: center; border-radius: 6px; cursor: pointer; user-select: none; }
         .key:active { background: #cbd5e1; }
         .key-clear { background: #fee2e2; color: #dc2626; }
         .key-back { background: #fef3c7; color: #d97706; }
 
-        /* Estilos para la sección de Reportes */
-        .report-box { margin-top: 15px; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; max-height: 200px; overflow-y: auto; }
-        .report-item { font-size: 14px; padding: 8px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; }
-        .totals { font-weight: bold; font-size: 16px; color: #059669; margin-top: 10px; text-align: right; }
+        /* Estilos del Panel de Reportes Colapsable */
+        .report-panel { display: none; margin-top: 12px; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .report-box { max-height: 180px; overflow-y: auto; margin-top: 10px; }
+        .report-item { font-size: 13px; padding: 6px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; }
+        .totals { font-weight: bold; font-size: 15px; color: #059669; margin-top: 8px; text-align: right; }
     </style>
 </head>
 <body>
@@ -48,45 +57,54 @@ const htmlContent = `
             <h2>Registrar Pago Móvil</h2>
             <form id="pagoForm">
                 <label>Referencia (últimos dígitos):</label>
-                <input type="text" id="referencia" readonly placeholder="Toque para escribir" required>
+                <input type="text" id="referencia" placeholder="Ej: 4541" required>
                 
                 <label>Monto:</label>
-                <input type="text" id="monto" readonly placeholder="Toque para escribir" required>
+                <input type="text" id="monto" placeholder="Ej: 1200" required>
                 
                 <label>Teléfono:</label>
-                <input type="text" id="telefono" readonly placeholder="Toque para escribir" required>
+                <input type="text" id="telefono" placeholder="Ej: 0424..." required>
                 
                 <label>Cédula:</label>
-                <input type="text" id="cedula" readonly placeholder="Toque para escribir" required>
+                <input type="text" id="cedula" placeholder="Ej: 1713..." required>
                 
                 <button type="submit" class="btn-primary">Verificar y Registrar</button>
             </form>
             <div id="mensaje"></div>
 
-            <!-- Teclado Numérico Virtual Táctil -->
-            <div class="keyboard" id="virtualKeyboard" style="display:none;">
-                <div class="key" onclick="insertKey('1')">1</div>
-                <div class="key" onclick="insertKey('2')">2</div>
-                <div class="key" onclick="insertKey('3')">3</div>
-                <div class="key" onclick="insertKey('4')">4</div>
-                <div class="key" onclick="insertKey('5')">5</div>
-                <div class="key" onclick="insertKey('6')">6</div>
-                <div class="key" onclick="insertKey('7')">7</div>
-                <div class="key" onclick="insertKey('8')">8</div>
-                <div class="key" onclick="insertKey('9')">9</div>
-                <div class="key key-clear" onclick="clearInput()">C</div>
-                <div class="key" onclick="insertKey('0')">0</div>
-                <div class="key key-back" onclick="backspaceKey()">⌫</div>
+            <!-- Teclado Numérico Virtual Flotante -->
+            <div class="keyboard-container" id="virtualKeyboard">
+                <div class="keyboard-header">
+                    <span class="keyboard-title">Teclado Táctil</span>
+                    <button type="button" class="close-keyboard" onclick="hideKeyboard()">Ocultar ✕</button>
+                </div>
+                <div class="keyboard-grid">
+                    <div class="key" onclick="insertKey('1')">1</div>
+                    <div class="key" onclick="insertKey('2')">2</div>
+                    <div class="key" onclick="insertKey('3')">3</div>
+                    <div class="key" onclick="insertKey('4')">4</div>
+                    <div class="key" onclick="insertKey('5')">5</div>
+                    <div class="key" onclick="insertKey('6')">6</div>
+                    <div class="key" onclick="insertKey('7')">7</div>
+                    <div class="key" onclick="insertKey('8')">8</div>
+                    <div class="key" onclick="insertKey('9')">9</div>
+                    <div class="key key-clear" onclick="clearInput()">C</div>
+                    <div class="key" onclick="insertKey('0')">0</div>
+                    <div class="key key-back" onclick="backspaceKey()">⌫</div>
+                </div>
             </div>
         </div>
 
-        <!-- Panel de Reportes Diario -->
-        <div class="card">
-            <h2>Cierre y Reporte Diario</h2>
-            <button class="btn-secondary" onclick="cargarReporte()">Actualizar Reporte</button>
-            <div class="totals" id="totalMonto">Total Recaudado: $0.00</div>
-            <div class="report-box" id="listaReporte">
-                <div style="text-align: center; color: #64748b;">Presione "Actualizar Reporte" para ver las transacciones.</div>
+        <!-- Botón y Panel de Reportes Diario (Oculto / Colapsable) -->
+        <div class="card" style="padding: 15px;">
+            <button class="btn-toggle" onclick="toggleReporte()">
+                <span>📊</span> <span id="toggleReportText">Ver Cierre y Reporte Diario</span>
+            </button>
+            <div class="report-panel" id="reportPanel">
+                <div class="totals" id="totalMonto">Total Recaudado: $0.00</div>
+                <div class="report-box" id="listaReporte">
+                    <div style="text-align: center; color: #64748b;">Cargando transacciones...</div>
+                </div>
             </div>
         </div>
     </div>
@@ -95,18 +113,18 @@ const htmlContent = `
         let activeInput = null;
         const keyboard = document.getElementById('virtualKeyboard');
 
-        // Asignar eventos táctiles a cada campo de entrada para mostrar el teclado
+        // Detectar enfoque para activar el teclado virtual (útil para pantallas táctiles)
         ['referencia', 'monto', 'telefono', 'cedula'].forEach(id => {
             const input = document.getElementById(id);
             input.addEventListener('focus', () => {
                 activeInput = input;
-                keyboard.style.display = 'grid';
-            });
-            input.addEventListener('click', () => {
-                activeInput = input;
-                keyboard.style.display = 'grid';
+                keyboard.style.display = 'block';
             });
         });
+
+        function hideKeyboard() {
+            keyboard.style.display = 'none';
+        }
 
         function insertKey(val) {
             if (activeInput) {
@@ -123,6 +141,20 @@ const htmlContent = `
         function clearInput() {
             if (activeInput) {
                 activeInput.value = '';
+            }
+        }
+
+        // Mostrar u ocultar el panel de reporte diario
+        function toggleReporte() {
+            const panel = document.getElementById('reportPanel');
+            const text = document.getElementById('toggleReportText');
+            if (panel.style.display === 'block') {
+                panel.style.display = 'none';
+                text.textContent = 'Ver Cierre y Reporte Diario';
+            } else {
+                panel.style.display = 'block';
+                text.textContent = 'Ocultar Cierre y Reporte';
+                cargarReporte();
             }
         }
 
@@ -146,8 +178,10 @@ const htmlContent = `
                     mensaje.style.color = 'green';
                     mensaje.textContent = data.mensaje;
                     document.getElementById('pagoForm').reset();
-                    keyboard.style.display = 'none';
-                    cargarReporte(); // Actualiza automáticamente el reporte al registrar
+                    hideKeyboard();
+                    if (document.getElementById('reportPanel').style.display === 'block') {
+                        cargarReporte();
+                    }
                 } else {
                     mensaje.style.color = 'red';
                     mensaje.textContent = data.error;
@@ -158,11 +192,10 @@ const htmlContent = `
             }
         });
 
-        // Función para consultar el cierre diario
+        // Cargar reporte desde Supabase
         async function cargarReporte() {
             const listaReporte = document.getElementById('listaReporte');
             const totalMonto = document.getElementById('totalMonto');
-            listaReporte.innerHTML = '<div style="text-align: center; color: #64748b;">Cargando...</div>';
 
             try {
                 const res = await fetch('/api/cierre-diario');
@@ -189,20 +222,15 @@ const htmlContent = `
                 listaReporte.innerHTML = '<div style="text-align: center; color: red;">Error de conexión.</div>';
             }
         }
-
-        // Cargar reporte al abrir la página por primera vez
-        window.onload = cargarReporte;
     </script>
 </body>
 </html>
 `;
 
-// Ruta principal que sirve la interfaz táctil
 app.get('/', (req, res) => {
     res.send(htmlContent);
 });
 
-// 1. REGISTRAR Y VALIDAR PAGO MÓVIL
 app.post('/api/verificar-pago', async (req, res) => {
     try {
         let { referencia, monto, telefono, cedula } = req.body;
@@ -224,7 +252,6 @@ app.post('/api/verificar-pago', async (req, res) => {
     }
 });
 
-// 2. OBTENER CIERRE DIARIO
 app.get('/api/cierre-diario', async (req, res) => {
     try {
         const { data: pagos, error } = await supabase
