@@ -20,9 +20,9 @@ const htmlContent = `
         .main-container { width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: 15px; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         
-        /* Estilos del Logo */
-        .logo-container { text-align: center; margin-bottom: 10px; }
-        .logo-container svg { max-width: 220px; height: auto; }
+        /* Estilos del Logo con Fondo Blanco */
+        .logo-container { text-align: center; margin-bottom: 10px; background: #ffffff; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
+        .logo-container svg { max-width: 220px; height: auto; display: block; margin: 0 auto; }
 
         h2 { text-align: center; color: #2c3e50; margin-top: 5px; margin-bottom: 4px; font-size: 22px; }
         .brand-subtitle { text-align: center; color: #64748b; font-size: 12px; font-weight: bold; letter-spacing: 1px; margin-bottom: 15px; text-transform: uppercase; }
@@ -70,7 +70,7 @@ const htmlContent = `
     <div class="main-container">
         <!-- Formulario de Consulta Rápida por Referencia -->
         <div class="card">
-            <!-- LOGO INTEGRADO -->
+            <!-- LOGO INTEGRADO CON FONDO BLANCO -->
             <div class="logo-container">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 200" width="100%" height="100%">
                   <defs>
@@ -79,27 +79,28 @@ const htmlContent = `
                       <stop offset="100%" stop-color="#1e1b4b" />
                     </linearGradient>
                     <linearGradient id="cyanGlow" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stop-color="#38bdf8" />
+                      <stop offset="0%" stop-color="#0284c7" />
                       <stop offset="100%" stop-color="#2563eb" />
                     </linearGradient>
                   </defs>
 
-                  <rect width="100%" height="100%" rx="16" fill="#0f172a" />
+                  <!-- Fondo blanco para el SVG -->
+                  <rect width="100%" height="100%" rx="16" fill="#ffffff" />
 
                   <g transform="translate(30, 25)">
-                    <polygon points="60,10 110,35 110,95 60,120 10,95 10,35" fill="none" stroke="url(#cyanGlow)" stroke-width="3" opacity="0.4" />
-                    <circle cx="60" cy="10" r="4" fill="#38bdf8" />
+                    <polygon points="60,10 110,35 110,95 60,120 10,95 10,35" fill="none" stroke="url(#cyanGlow)" stroke-width="3" opacity="0.5" />
+                    <circle cx="60" cy="10" r="4" fill="#0284c7" />
                     <circle cx="110" cy="95" r="4" fill="#2563eb" />
-                    <circle cx="10" cy="95" r="4" fill="#38bdf8" />
-                    <path d="M 45 35 L 45 80 C 45 95, 65 95, 75 85 L 75 70" fill="none" stroke="#38bdf8" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" />
+                    <circle cx="10" cy="95" r="4" fill="#0284c7" />
+                    <path d="M 45 35 L 45 80 C 45 95, 65 95, 75 85 L 75 70" fill="none" stroke="#0284c7" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" />
                     <path d="M 65 35 L 90 35 C 102 35, 102 60, 90 60 L 65 60 M 80 55 L 100 85" fill="none" stroke="url(#techGradient)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" />
                     <circle cx="65" cy="60" r="5" fill="#ffffff" />
                   </g>
 
                   <g transform="translate(160, 85)">
-                    <text x="0" y="10" font-family="system-ui, sans-serif" font-weight="900" font-size="34" fill="#ffffff" letter-spacing="2">JR</text>
-                    <text x="55" y="10" font-family="system-ui, sans-serif" font-weight="600" font-size="34" fill="#38bdf8" letter-spacing="1">.</text>
-                    <text x="0" y="42" font-family="system-ui, sans-serif" font-weight="bold" font-size="14" fill="#94a3b8" letter-spacing="4.5">SOLUCIONES TECNOLOGICAS</text>
+                    <text x="0" y="10" font-family="system-ui, sans-serif" font-weight="900" font-size="34" fill="#1e293b" letter-spacing="2">JR</text>
+                    <text x="55" y="10" font-family="system-ui, sans-serif" font-weight="600" font-size="34" fill="#2563eb" letter-spacing="1">.</text>
+                    <text x="0" y="42" font-family="system-ui, sans-serif" font-weight="bold" font-size="14" fill="#475569" letter-spacing="4.5">SOLUCIONES TECNOLOGICAS</text>
                     <line x1="0" y1="52" x2="295" y2="52" stroke="url(#cyanGlow)" stroke-width="2" stroke-linecap="round" />
                   </g>
                 </svg>
