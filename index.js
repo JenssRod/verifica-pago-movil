@@ -14,23 +14,26 @@ const htmlContent = `
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verificación de Pago Móvil - Biopago</title>
+    <title>Verificación de Pago Móvil - Biopago / Cierre</title>
     <style>
         body { font-family: Arial, sans-serif; background: #eef2f7; margin: 0; padding: 15px; display: flex; justify-content: center; align-items: center; flex-direction: column; }
-        .main-container { width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 15px; }
+        .main-container { width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: 15px; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         h2 { text-align: center; color: #2c3e50; margin-top: 0; font-size: 22px; }
-        label { display: block; margin-top: 10px; font-weight: bold; color: #34495e; font-size: 15px; }
+        label { display: block; margin-top: 10px; font-weight: bold; color: #34495e; font-size: 14px; }
         input { width: 100%; padding: 12px; margin-top: 5px; box-sizing: border-box; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 16px; background: #f8fafc; }
         input:focus { border-color: #3b82f6; outline: none; background: white; }
         
         .btn-primary { width: 100%; background: #2563eb; color: white; padding: 14px; border: none; border-radius: 8px; margin-top: 18px; cursor: pointer; font-size: 16px; font-weight: bold; }
         .btn-primary:active { background: #1d4ed8; }
         
-        .btn-toggle { width: 100%; background: #475569; color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: bold; display: flex; justify-content: center; align-items: center; gap: 8px; transition: background 0.2s; }
-        .btn-toggle:hover { background: #334155; }
+        .btn-toggle { width: 100%; background: #1e293b; color: white; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: bold; display: flex; justify-content: center; align-items: center; gap: 8px; transition: background 0.2s; }
+        .btn-toggle:hover { background: #0f172a; }
 
-        .btn-pdf { width: 100%; background: #dc2626; color: white; padding: 12px; border: none; border-radius: 8px; margin-top: 10px; cursor: pointer; font-size: 15px; font-weight: bold; display: flex; justify-content: center; align-items: center; gap: 8px; text-decoration: none; box-sizing: border-box; }
+        .btn-bcv { background: #059669; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; margin-top: 6px; }
+        .btn-bcv:hover { background: #047857; }
+
+        .btn-pdf { width: 100%; background: #dc2626; color: white; padding: 12px; border: none; border-radius: 8px; margin-top: 12px; cursor: pointer; font-size: 15px; font-weight: bold; display: flex; justify-content: center; align-items: center; gap: 8px; text-decoration: none; box-sizing: border-box; text-align: center; }
         .btn-pdf:hover { background: #b91c1c; }
         
         #mensaje { margin-top: 12px; text-align: center; font-weight: bold; font-size: 15px; }
@@ -47,19 +50,20 @@ const htmlContent = `
         .key-clear { background: #fee2e2; color: #dc2626; }
         .key-back { background: #fef3c7; color: #d97706; }
 
-        /* Estilos del Panel de Reportes Colapsable */
-        .report-panel { display: none; margin-top: 12px; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; }
-        .report-box { max-height: 160px; overflow-y: auto; margin-top: 10px; }
-        .report-item { font-size: 13px; padding: 6px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; }
-        .totals-box { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px; border-radius: 6px; margin-top: 8px; }
-        .totals-text { font-weight: bold; font-size: 14px; color: #166534; text-align: right; }
+        /* Estilos del Panel de Reportes Estilo Nexus */
+        .report-panel { display: none; margin-top: 12px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .factor-box { background: #f1f5f9; border: 1px solid #cbd5e1; padding: 10px; border-radius: 6px; margin-bottom: 12px; }
+        .report-box { max-height: 180px; overflow-y: auto; margin-top: 10px; border: 1px solid #e2e8f0; background: white; border-radius: 6px; padding: 5px; }
+        .report-item { font-size: 13px; padding: 8px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
+        .totals-box { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px; border-radius: 6px; margin-top: 10px; }
+        .totals-text { font-weight: bold; font-size: 15px; color: #166534; text-align: right; }
     </style>
 </head>
 <body>
     <div class="main-container">
-        <!-- Formulario de Registro -->
+        <!-- Formulario de Registro / Consulta de Pago -->
         <div class="card">
-            <h2>Registrar Pago Móvil</h2>
+            <h2>Gestión de Pagos / Biopago</h2>
             <form id="pagoForm">
                 <label>Referencia (últimos dígitos):</label>
                 <input type="text" id="referencia" placeholder="Ej: 4541" required>
@@ -73,7 +77,7 @@ const htmlContent = `
                 <label>Cédula:</label>
                 <input type="text" id="cedula" placeholder="Ej: 1713..." required>
                 
-                <button type="submit" class="btn-primary">Verificar y Registrar</button>
+                <button type="submit" class="btn-primary">Registrar Pago en Sistema</button>
             </form>
             <div id="mensaje"></div>
 
@@ -100,25 +104,35 @@ const htmlContent = `
             </div>
         </div>
 
-        <!-- Botón y Panel de Reportes Diario -->
+        <!-- Módulo de Factores y Cierre Diario (Estilo Nexus) -->
         <div class="card" style="padding: 15px;">
             <button class="btn-toggle" onclick="toggleReporte()">
-                <span>📊</span> <span id="toggleReportText">Ver Cierre y Reporte de Hoy</span>
+                <span>📊</span> <span id="toggleReportText">Módulo de Cierre y Factor Cambiario</span>
             </button>
             <div class="report-panel" id="reportPanel">
-                <label style="font-size: 13px; margin-top: 0;">Tasa BCV del Dólar (Bs.): <span style="font-size: 11px; color: #64748b; font-weight: normal;">(Automática o editable)</span></label>
-                <input type="text" id="tasaBcv" value="36.50" oninput="calcularTotales()" style="padding: 8px; font-size: 14px;">
+                
+                <!-- Factor Cambiario BCV (Estilo Nexus) -->
+                <div class="factor-box">
+                    <label style="margin-top: 0; color: #1e293b;">Factor Cambiario / Tasa BCV (Bs. por USD):</label>
+                    <div style="display: flex; gap: 8px; align-items: center; margin-top: 5px;">
+                        <input type="text" id="tasaBcv" value="36.50" oninput="calcularTotales()" style="margin-top: 0; font-weight: bold; color: #0f172a;">
+                        <button type="button" class="btn-bcv" onclick="consultarTasaBcvManual()">🔄 Consultar BCV</button>
+                    </div>
+                    <div id="bcvStatus" style="font-size: 11px; color: #64748b; margin-top: 4px;">Tasa lista para conversión y cierre.</div>
+                </div>
 
                 <div class="totals-box">
-                    <div class="totals-text" id="totalBsText">Total Bs.: Bs. 0.00</div>
-                    <div class="totals-text" id="totalUsdText" style="color: #1e40af; margin-top: 4px;">Equivalente USD: $ 0.00</div>
+                    <div class="totals-text" id="totalBsText">Total Recaudado Bs.: Bs. 0.00</div>
+                    <div class="totals-text" id="totalUsdText" style="color: #1e40af; margin-top: 4px;">Equivalente Dólares: $ 0.00</div>
                 </div>
 
+                <div style="font-weight: bold; font-size: 13px; color: #475569; margin-top: 12px;">Transacciones Registradas Hoy:</div>
                 <div class="report-box" id="listaReporte">
-                    <div style="text-align: center; color: #64748b;">Cargando transacciones de hoy...</div>
+                    <div style="text-align: center; color: #64748b; padding: 15px;">Cargando transacciones...</div>
                 </div>
+
                 <a id="btnPdfLink" href="/api/cierre-pdf?tasa=36.50" target="_blank" class="btn-pdf">
-                    <span>📄</span> Descargar / Imprimir Cierre de Hoy PDF
+                    <span>📄</span> Imprimir Cierre de Caja en PDF
                 </a>
             </div>
         </div>
@@ -155,16 +169,24 @@ const htmlContent = `
             if (activeInput && activeInput.id !== 'tasaBcv') activeInput.value = '';
         }
 
-        async function obtenerTasaBcvAutomatica() {
+        async function consultarTasaBcvManual() {
+            const status = document.getElementById('bcvStatus');
+            status.textContent = 'Consultando tasa oficial BCV...';
+            status.style.color = '#d97706';
             try {
-                const res = await fetch('https://ve.dolarapi.com/v1/dolares/bcv');
+                const res = await fetch('https://ve.dolarapi.com/v1/dolares/oficial');
                 const data = await res.json();
                 if (data && data.promedio) {
                     document.getElementById('tasaBcv').value = data.promedio;
                     calcularTotales();
+                    status.textContent = '¡Tasa BCV actualizada exitosamente desde la web!';
+                    status.style.color = '#059669';
+                } else {
+                    throw new Error('Respuesta inválida');
                 }
             } catch (e) {
-                console.log('No se pudo conectar a la tasa automática, usando valor predeterminado.');
+                status.textContent = 'No se pudo conectar de forma automática. Puede ingresarla manualmente.';
+                status.style.color = '#dc2626';
             }
         }
 
@@ -173,11 +195,11 @@ const htmlContent = `
             const text = document.getElementById('toggleReportText');
             if (panel.style.display === 'block') {
                 panel.style.display = 'none';
-                text.textContent = 'Ver Cierre y Reporte de Hoy';
+                text.textContent = 'Módulo de Cierre y Factor Cambiario';
             } else {
                 panel.style.display = 'block';
-                text.textContent = 'Ocultar Cierre y Reporte';
-                obtenerTasaBcvAutomatica();
+                text.textContent = 'Ocultar Módulo de Cierre';
+                consultarTasaBcvManual();
                 cargarReporte();
             }
         }
@@ -227,7 +249,7 @@ const htmlContent = `
                     calcularTotales();
 
                     if (data.pagos.length === 0) {
-                        listaReporte.innerHTML = '<div style="text-align: center; color: #64748b;">No hay pagos registrados hoy.</div>';
+                        listaReporte.innerHTML = '<div style="text-align: center; color: #64748b; padding: 15px;">No hay pagos registrados hoy.</div>';
                         return;
                     }
                     let html = '';
@@ -239,10 +261,10 @@ const htmlContent = `
                     });
                     listaReporte.innerHTML = html;
                 } else {
-                    listaReporte.innerHTML = '<div style="text-align: center; color: red;">Error al cargar reporte.</div>';
+                    listaReporte.innerHTML = '<div style="text-align: center; color: red; padding: 15px;">Error al cargar reporte.</div>';
                 }
             } catch (err) {
-                listaReporte.innerHTML = '<div style="text-align: center; color: red;">Error de conexión.</div>';
+                listaReporte.innerHTML = '<div style="text-align: center; color: red; padding: 15px;">Error de conexión.</div>';
             }
         }
 
@@ -251,8 +273,8 @@ const htmlContent = `
             let totalBs = globalDataPagos.reduce((acc, p) => acc + parseFloat(p.monto || 0), 0);
             let totalUsd = tasa > 0 ? totalBs / tasa : 0;
 
-            document.getElementById('totalBsText').textContent = 'Total Bs.: Bs. ' + totalBs.toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            document.getElementById('totalUsdText').textContent = 'Equivalente USD: $ ' + totalUsd.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('totalBsText').textContent = 'Total Recaudado Bs.: Bs. ' + totalBs.toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('totalUsdText').textContent = 'Equivalente Dólares: $ ' + totalUsd.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
             document.getElementById('btnPdfLink').href = '/api/cierre-pdf?tasa=' + tasa;
         }
@@ -334,12 +356,12 @@ app.get('/api/cierre-pdf', async (req, res) => {
 
         doc.pipe(res);
 
-        doc.fontSize(20).fillColor('#2c3e50').text('Cierre y Reporte Diario de Pagos', { align: 'center' });
+        doc.fontSize(20).fillColor('#2c3e50').text('Cierre y Reporte Diario de Caja', { align: 'center' });
         doc.fontSize(10).fillColor('#7f8c8d').text(`Fecha de emisión: ${fechaActual}`, { align: 'center' });
         doc.moveDown(1.2);
 
-        doc.fontSize(11).fillColor('#333').text(`Total de Transacciones de Hoy: ${pagos.length}`);
-        doc.text(`Tasa BCV Aplicada: Bs. ${tasa.toFixed(2)}`);
+        doc.fontSize(11).fillColor('#333').text(`Total de Transacciones: ${pagos.length}`);
+        doc.text(`Factor Cambiario / Tasa BCV: Bs. ${tasa.toFixed(2)}`);
         doc.text(`Monto Total Recaudado (Bs.): Bs. ${totalBs.toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
         doc.text(`Equivalente Total en Dólares ($): $ ${totalUsd.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
         doc.moveDown(1);
